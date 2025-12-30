@@ -5,42 +5,42 @@
 .login2(ng-controller='SignInCtrl')
   .login-wrapper
     a(href='./')
-      img(width='160', height='160', src='/static/logo/exports/STF-512.png', title='STF')
+      img(width='160', height='160', src='/static/logo/exports/STF-512.png', title='云测平台')
 
     form(name='signin', novalidate, ng-submit='submit()')
       .alert.alert-danger(ng-show='error')
-        span(ng-show='error.$invalid', translate) Check errors below
-        span(ng-show='error.$incorrect', translate) Incorrect login details
-        span(ng-show='error.$server', translate) Server error. Check log output.
+        span(ng-show='error.$invalid', translate) 请检查下面的错误
+        span(ng-show='error.$incorrect', translate) 登录信息不正确
+        span(ng-show='error.$server', translate) 服务器错误，请检查日志输出
 
       .form-group
         .input-group
           span.input-group-addon
             i.fa.fa-user
-          input.form-control(ng-model='username', name='username', required, type='text', placeholder='Name',
+          input.form-control(ng-model='username', name='username', required, type='text', placeholder='用户名',
           autocorrect='off', autocapitalize='off', spellcheck='false', autocomplete='section-login username')
         .alert.alert-warning(ng-show='signin.username.$dirty && signin.username.$invalid')
-          span(translate) Please enter your name
+          span(translate) 请输入您的用户名
 
       .form-group
         .input-group
           span.input-group-addon
             i.fa.fa-envelope
-          input.form-control(ng-model='email', name='email', required, type='email', placeholder='E-mail',
+          input.form-control(ng-model='email', name='email', required, type='email', placeholder='邮箱地址',
           autocorrect='off', autocapitalize='off', spellcheck='false', autocomplete='section-login email')
         .alert.alert-warning(ng-show='signin.email.$dirty && signin.email.$invalid')
-          span(ng-show='signin.email.$error.email', translate) Please enter a valid email
-          span(ng-show='signin.email.$error.required', translate) Please enter your email
+          span(ng-show='signin.email.$error.email', translate) 请输入有效的邮箱地址
+          span(ng-show='signin.email.$error.required', translate) 请输入您的邮箱地址
 
-      input.btn.btn-lg.btn-primary.btn-block(type='submit', value='Log In')
+      input.btn.btn-lg.btn-primary.btn-block(type='submit', value='登录')
 
       button.btn.btn-sm.btn-default-outline(
         type='button'
-        uib-tooltip="{{'Write a mail to the support team' | translate}}"
+        uib-tooltip="{{'给支持团队发送邮件' | translate}}"
         ng-disabled='!contactEmail'
         ng-click='mailToSupport()'
         tooltip-placement='top'
         tooltip-popup-delay='500')
           i.fa.fa-envelope-o
-          span(translate) Contact Support
+          span(translate) 联系支持团队
 

@@ -30,9 +30,9 @@ tags:
     description: Users Operations
   - name: devices
     description: Device Operations
-  - name: groups 
+  - name: groups
     description: Groups Operations
-  - name: admin 
+  - name: admin
     description: Privileged Operations
 paths:
   /groups:
@@ -49,11 +49,11 @@ paths:
           description: Comma-seperated list of fields; only listed fields will be returned in response
           required: false
           type: string
-        - name: owner 
+        - name: owner
           in: query
           description: Selects the groups for which you are the owner (true) or a simple member (false); note that by not providing this parameter, it means all groups to which you belong are selected
           required: false
-          type: boolean 
+          type: boolean
       responses:
         "200":
           description: Groups information
@@ -106,8 +106,8 @@ paths:
         - groups
       parameters:
         - name: group
-          in: body 
-          description: Group properties; at least one property is required 
+          in: body
+          description: Group properties; at least one property is required
           required: true
           schema:
             $ref: "#/definitions/GroupPayload"
@@ -169,13 +169,13 @@ paths:
       parameters:
         - name: id
           in: path
-          description: Group identifier 
+          description: Group identifier
           required: true
           type: string
         - name: group
           in: body
           description: Group properties; at least one property is required
-          required: true 
+          required: true
           schema:
             $ref: "#/definitions/GroupPayload"
       responses:
@@ -193,7 +193,7 @@ paths:
               * 400: Bad Request => invalid format or semantic of properties
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => quota is reached or unauthorized property
-              * 404: Not Found => unknown group 
+              * 404: Not Found => unknown group
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -209,12 +209,12 @@ paths:
       parameters:
         - name: id
           in: path
-          description: Group identifier 
+          description: Group identifier
           required: true
           type: string
       responses:
         "200":
-          description: Group removing is OK 
+          description: Group removing is OK
           schema:
             $ref: "#/definitions/Response"
         default:
@@ -222,7 +222,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => a device is currently booked or unremovable built-in group
-              * 404: Not Found => unknown group 
+              * 404: Not Found => unknown group
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -240,10 +240,10 @@ paths:
       parameters:
         - name: id
           in: path
-          description: Group identifier 
+          description: Group identifier
           required: true
           type: string
-        - name: bookable 
+        - name: bookable
           in: query
           description: Selects devices which could be potentially booked by that transient group (true => irrelevant for an origin group!), or selects all devices of the group (false); note that by not providing this parameter all devices of the group are selected
           type: boolean
@@ -263,7 +263,7 @@ paths:
             Unexpected Error:
               * 400: Bad request => group is not transient
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown group 
+              * 404: Not Found => unknown group
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -282,7 +282,7 @@ paths:
           required: true
           type: string
         - name: devices
-          in: body 
+          in: body
           description: Devices to add as a comma-separated list of serials; note that by not providing this parameter it means all devices which could be potentially booked by that transient group are added into the latter
           required: false
           schema:
@@ -318,12 +318,12 @@ paths:
       parameters:
         - name: id
           in: path
-          description: Group identifier 
+          description: Group identifier
           required: true
           type: string
         - name: devices
           in: body
-          description: Devices to remove as a comma-separated list of serials; note that by not providing this parameter it means all devices of the group are removed 
+          description: Devices to remove as a comma-separated list of serials; note that by not providing this parameter it means all devices of the group are removed
           required: false
           schema:
             $ref: "#/definitions/DevicesPayload"
@@ -415,7 +415,7 @@ paths:
               * 400: Bad Request => group is not transient
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => quota is reached
-              * 404: Not Found => unknown group or device 
+              * 404: Not Found => unknown group or device
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -449,7 +449,7 @@ paths:
             Unexpected Error:
               * 400: Bad Request => group is not transient
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown group or device 
+              * 404: Not Found => unknown group or device
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -484,7 +484,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown group 
+              * 404: Not Found => unknown group
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -492,7 +492,7 @@ paths:
         - accessTokenAuth: []
     put:
       summary: Adds users into a group
-      description: Adds users into a group owned by you 
+      description: Adds users into a group owned by you
       operationId: addGroupUsers
       tags:
         - groups
@@ -517,7 +517,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown group or device or users 
+              * 404: Not Found => unknown group or device or users
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -551,8 +551,8 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 403: Forbidden => owner or administrator user can't be removed 
-              * 404: Not Found => unknown group or device or users 
+              * 403: Forbidden => owner or administrator user can't be removed
+              * 404: Not Found => unknown group or device or users
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -568,7 +568,7 @@ paths:
       tags:
         - groups
       parameters:
-        - name: id 
+        - name: id
           in: path
           description: Group identifier
           required: true
@@ -624,7 +624,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown group or device or user 
+              * 404: Not Found => unknown group or device or user
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -721,7 +721,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => administrator user can't be removed
-              * 404: Not Found => unknown users 
+              * 404: Not Found => unknown users
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -793,20 +793,20 @@ paths:
       tags:
         - admin
       parameters:
-        - name: number 
-          in: query 
+        - name: number
+          in: query
           description: Number of groups
           required: false
           type: integer
           minimum: 0
-        - name: duration 
-          in: query 
-          description: Total duration of groups (milliseconds) 
+        - name: duration
+          in: query
+          description: Total duration of groups (milliseconds)
           required: false
           type: integer
           minimum: 0
         - name: repetitions
-          in: query 
+          in: query
           description: Number of repetitions per Group
           required: false
           type: integer
@@ -827,23 +827,23 @@ paths:
       security:
         - accessTokenAuth: []
   /users/{email}:
-    x-swagger-router-controller: users 
+    x-swagger-router-controller: users
     post:
       summary: Creates a user
       description: Creates a user in the database
       operationId: createUser
       tags:
-        - admin 
+        - admin
       parameters:
         - name: email
           in: path
           description: User identifier (email)
           required: true
           type: string
-        - name: name 
+        - name: name
           in: query
-          description: User name 
-          required: true 
+          description: User name
+          required: true
           type: string
       responses:
         "201":
@@ -865,7 +865,7 @@ paths:
       description: Gets a user; if you are the administrator user then all user fields are returned, otherwise only 'email', 'name' and 'privilege' user fields are returned
       operationId: getUserByEmail
       tags:
-        - users 
+        - users
       parameters:
         - name: email
           in: path
@@ -911,7 +911,7 @@ paths:
           type: boolean
       responses:
         "200":
-          description: User removing is OK 
+          description: User removing is OK
           schema:
             $ref: "#/definitions/Response"
         default:
@@ -935,7 +935,7 @@ paths:
       tags:
         - admin
       parameters:
-        - name: email 
+        - name: email
           in: path
           description: User identifier (email)
           required: true
@@ -1083,7 +1083,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is not controlled by the user
-              * 404: Not Found => unknown user or device 
+              * 404: Not Found => unknown user or device
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1116,7 +1116,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is not controlled by the user
-              * 404: Not Found => unknown user or device 
+              * 404: Not Found => unknown user or device
               * 500: Internal Server Error
               * 504: Gateway Time-out => device is not responding
           schema:
@@ -1152,7 +1152,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is not controlled by the user
-              * 404: Not Found => unknown user or device 
+              * 404: Not Found => unknown user or device
               * 500: Internal Server Error
               * 504: Gateway Time-out => device is not responding
           schema:
@@ -1186,7 +1186,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is not controlled by the user
-              * 404: Not Found => unknown user or device 
+              * 404: Not Found => unknown user or device
               * 500: Internal Server Error
               * 504: Gateway Time-out => device is not responding
           schema:
@@ -1203,8 +1203,8 @@ paths:
         - admin
       parameters:
         - name: email
-          in: path 
-          description: User identifier (email) 
+          in: path
+          description: User identifier (email)
           required: true
           type: string
         - name: title
@@ -1221,7 +1221,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown user 
+              * 404: Not Found => unknown user
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1248,7 +1248,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown user 
+              * 404: Not Found => unknown user
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1275,7 +1275,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown user 
+              * 404: Not Found => unknown user
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1297,7 +1297,7 @@ paths:
           type: string
         - name: id
           in: path
-          description: Access token identifier 
+          description: Access token identifier
           required: true
           type: string
       responses:
@@ -1309,7 +1309,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown user or token 
+              * 404: Not Found => unknown user or token
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1327,9 +1327,9 @@ paths:
           description: User identifier (email)
           required: true
           type: string
-        - name: id 
+        - name: id
           in: path
-          description: Access token identifier 
+          description: Access token identifier
           required: true
           type: string
       responses:
@@ -1341,7 +1341,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown user or token 
+              * 404: Not Found => unknown user or token
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1415,7 +1415,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is already controlled or is not available
-              * 404: Not Found => unknown device 
+              * 404: Not Found => unknown device
               * 500: Internal Server Error
               * 504: Gateway Time-out => device is not responding
           schema:
@@ -1431,16 +1431,16 @@ paths:
       tags:
         - user
       parameters:
-        - name: serial 
-          in: path 
+        - name: serial
+          in: path
           description: Device identifier (serial)
           required: true
           type: string
-        - name: timeout 
-          in: query 
+        - name: timeout
+          in: query
           description: Means the device will be automatically removed from the user control if it is kept idle for this period (in milliseconds); default value is provided by the provider 'group timeout'
           required: false
-          type: integer 
+          type: integer
           minimum: 0
       responses:
         "200":
@@ -1452,7 +1452,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is already controlled or is not available
-              * 404: Not Found => unknown device 
+              * 404: Not Found => unknown device
               * 500: Internal Server Error
               * 504: Gateway Time-out => device is not responding
           schema:
@@ -1486,7 +1486,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is not controlled by the user
-              * 404: Not Found => unknown device 
+              * 404: Not Found => unknown device
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1514,7 +1514,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is not controlled by the user
-              * 404: Not Found => unknown device 
+              * 404: Not Found => unknown device
               * 500: Internal Server Error
               * 504: Gateway Time-out => device is not responding
           schema:
@@ -1547,7 +1547,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is not controlled by the user
-              * 404: Not Found => unknown device 
+              * 404: Not Found => unknown device
               * 500: Internal Server Error
               * 504: Gateway Time-out => device is not responding
           schema:
@@ -1576,7 +1576,7 @@ paths:
             Unexpected Error:
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => device is not controlled by the user
-              * 404: Not Found => unknown device 
+              * 404: Not Found => unknown device
               * 500: Internal Server Error
               * 504: Gateway Time-out => device is not responding
           schema:
@@ -1587,7 +1587,7 @@ paths:
     x-swagger-router-controller: user
     get:
       summary: Gets your access tokens
-      description: Gets your access tokens; note that all fields are returned in reponse including the 'id' one 
+      description: Gets your access tokens; note that all fields are returned in reponse including the 'id' one
       operationId: getAccessTokens
       tags:
         - user
@@ -1615,8 +1615,8 @@ paths:
         - user
       parameters:
         - name: title
-          in: query 
-          description: Access token title 
+          in: query
+          description: Access token title
           required: true
           type: string
       responses:
@@ -1693,7 +1693,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown token 
+              * 404: Not Found => unknown token
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1706,7 +1706,7 @@ paths:
       tags:
         - user
       parameters:
-        - name: id 
+        - name: id
           in: path
           description: Access token identifier
           required: true
@@ -1720,7 +1720,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown token 
+              * 404: Not Found => unknown token
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -1760,9 +1760,9 @@ paths:
           schema:
             $ref: "#/definitions/ErrorResponse"
       security:
-        - accessTokenAuth: []        
+        - accessTokenAuth: []
   /devices:
-    x-swagger-router-controller: devices 
+    x-swagger-router-controller: devices
     get:
       summary: Device List
       description: The devices endpoint return list of all the STF devices including Disconnected and Offline
@@ -1770,7 +1770,7 @@ paths:
       tags:
         - devices
       parameters:
-        - name: target 
+        - name: target
           in: query
           description: >
             Targets devices of your universe:
@@ -1781,10 +1781,10 @@ paths:
              * user (default value) - devices which are accessible by you at a given time
           type: string
           enum:
-            - bookable 
+            - bookable
             - standard
-            - origin 
-            - standardizable 
+            - origin
+            - standardizable
             - user
           default: user
         - name: fields
@@ -1833,7 +1833,7 @@ paths:
           description: Allows or not the removing of each device depending respectively if the device is controlled (true) or not (false); note that by not providing this parameter it means an unconditional removing
           required: false
           type: boolean
-        - name: devices 
+        - name: devices
           in: body
           description: Devices to remove as a comma-separated list of serials; note that by not providing this parameter it means all devices are selected for removing
           required: false
@@ -1848,7 +1848,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown devices 
+              * 404: Not Found => unknown devices
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
@@ -1888,26 +1888,26 @@ paths:
     delete:
       summary: Removes a device
       description: Removes a device from the database
-      operationId: deleteDevice 
+      operationId: deleteDevice
       tags:
-        - admin 
+        - admin
       parameters:
         - name: serial
           in: path
           description: Device identifier (serial)
           required: true
           type: string
-        - name: present 
+        - name: present
           in: query
           description: Allows or not the removing of the device depending respectively if the device is present (true) or not (false); note that by not providing this parameter it means an unconditional removing
           required: false
           type: boolean
-        - name: booked 
+        - name: booked
           in: query
           description: Allows or not the removing of the device depending respectively if the device is booked (true) or not (false); note that by not providing this parameter it means an unconditional removing
           required: false
           type: boolean
-        - name: annotated 
+        - name: annotated
           in: query
           description: Allows or not the removing of the device depending respectively if the device is annotated (true) or not (false); note that by not providing this parameter it means an unconditional removing
           required: false
@@ -1986,8 +1986,8 @@ paths:
           description: Group identifier
           required: true
           type: string
-        - name: devices 
-          in: body 
+        - name: devices
+          in: body
           description: >
             Devices to add as a comma-separated list of serials; note that by not providing this parameter it means all 'available devices' are selected for adding:
              * 'availables devices' means all devices in case of a bookable group
@@ -2010,8 +2010,8 @@ paths:
             Unexpected Error:
               * 400: Bad Request => group is not an origin one
               * 401: Unauthorized => bad credentials
-              * 403: Forbidden => a device is currently booked 
-              * 404: Not Found => unknown group or devices 
+              * 403: Forbidden => a device is currently booked
+              * 404: Not Found => unknown group or devices
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
               * 504: Gateway Time-out => server is not responding
@@ -2053,7 +2053,7 @@ paths:
               * 400: Bad Request => group is not an origin one
               * 401: Unauthorized => bad credentials
               * 403: Forbidden => a device is currently booked
-              * 404: Not Found => unknown group or devices 
+              * 404: Not Found => unknown group or devices
               * 500: Internal Server Error
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
               * 504: Gateway Time-out => server is not responding
@@ -2089,7 +2089,7 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown device 
+              * 404: Not Found => unknown device
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
@@ -2123,28 +2123,28 @@ paths:
           description: >
             Unexpected Error:
               * 401: Unauthorized => bad credentials
-              * 404: Not Found => unknown device 
+              * 404: Not Found => unknown device
               * 500: Internal Server Error
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
       security:
         - accessTokenAuth: []
   /devices/{serial}/groups/{id}:
-    x-swagger-router-controller: devices 
+    x-swagger-router-controller: devices
     put:
       summary: Adds a device into an origin group
       description: Adds a device into an origin group along with updating the added device; returns the updated device
       operationId: addOriginGroupDevice
       tags:
-        - admin 
+        - admin
       parameters:
         - name: serial
           in: path
           description: Device identifier (serial)
           required: true
           type: string
-        - name: id 
-          in: path 
+        - name: id
+          in: path
           description: Group identifier
           required: true
           type: string
@@ -2260,7 +2260,7 @@ definitions:
       group:
         description: Name of the group in conflict
         type: string
-      owner: 
+      owner:
         description: Owner of the group in conflict
         type: object
         properties:
@@ -2485,7 +2485,7 @@ definitions:
         type: string
         enum:
           - once
-          - bookable 
+          - bookable
           - hourly
           - daily
           - weekly
@@ -2493,7 +2493,7 @@ definitions:
           - quaterly
           - halfyearly
           - yearly
-          - debug 
+          - debug
           - standard
         default: once
       repetitions:

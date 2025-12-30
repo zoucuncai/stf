@@ -1,135 +1,72 @@
 #
-# Copyright © 2022-2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
+# Copyright © 2022-2024 contains code contributed by Orange SA,
+# authors: Denis Barbaron - Licensed under the Apache license 2.0
 #
 
-FROM ubuntu:22.04
+# ========== 构建阶段 ==========
+FROM ubuntu:20.04 AS builder
 
-# Sneak the stf executable into $PATH.
-ENV PATH=/app/bin:$PATH
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Work in app dir by default.
-WORKDIR /app
-COPY . /tmp/build/
-
-# Export default app port, not enough for all processes but it should do
-# for now.
-EXPOSE 3000
-
-ARG TARGETARCH
-
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-    export DEBIAN_FRONTEND=noninteractive && \
-    useradd --system \
-      --create-home \
-      --shell /usr/sbin/nologin \
-      stf-build && \
-    useradd --system \
-      --create-home \
-      --shell /usr/sbin/nologin \
-      stf && \
-    sed -i'' 's@http://archive.ubuntu.com/ubuntu/@mirror://mirrors.ubuntu.com/mirrors.txt@' /etc/apt/sources.list && \
-    echo '--- Updating repositories' && \
-    apt-get update && \
-    echo '--- Upgrading repositories' && \
-    apt-get -y dist-upgrade && \
-    apt-get -y install wget python3 build-essential && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      wget xz-utils python3 build-essential \
+      libzmq3-dev libprotobuf-dev git ca-certificates && \
     cd /tmp && \
-    wget --progress=dot:mega \
-      https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz && \
-    tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
-    rm node-v*.tar.xz && \
-    su stf-build -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
-    apt-get -y install --no-install-recommends libzmq3-dev libprotobuf-dev git graphicsmagick openjdk-8-jdk yasm cmake && \
+    wget -q https://nodejs.org/dist/v16.20.2/node-v16.20.2-linux-x64.tar.xz && \
+    tar -xJf node-v16.20.2-linux-x64.tar.xz --strip-components 1 -C /usr/local && \
+    rm -f node-*.tar.xz && \
+    mkdir -p /usr/lib/jvm && \
+    wget -q https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u432-b06/OpenJDK8U-jdk_x64_linux_hotspot_8u432b06.tar.gz -O - | \
+    tar -xz -C /usr/lib/jvm --strip-components=1 && \
+    apt-get purge -y wget xz-utils && \
+    apt-get autoremove -y && \
     apt-get clean && \
-    rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
-    mkdir /tmp/bundletool && \
-    cd /tmp/bundletool && \
-    wget --progress=dot:mega \
-      https://github.com/google/bundletool/releases/download/1.2.0/bundletool-all-1.2.0.jar && \
-    mv bundletool-all-1.2.0.jar bundletool.jar && \
-    mkdir -p /app && \
-    chown -R stf:stf /tmp/build /tmp/bundletool /app && \
-    set -x && \
-    echo '--- Building app' && \
-    cd /tmp/build && \
-    export PATH=$PWD/node_modules/.bin:$PATH && \
-    echo 'npm install --python="/usr/bin/python3" --omit=optional --loglevel http' | su stf -s /bin/bash && \
-    echo '--- Assembling app' && \
-    echo 'npm pack' | su stf -s /bin/bash && \
-    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
-    echo '/tmp/build/node_modules/.bin/bower cache clean' | su stf -s /bin/bash && \
-    npm prune --omit=dev && \
-    mv node_modules /app && \
-    rm -rf ~/.node-gyp && \
-    mkdir /app/bundletool && \
-    mv /tmp/bundletool/* /app/bundletool && \
-    cd /app && \
-    find /tmp -mindepth 1 ! -regex '^/tmp/hsperfdata_root\(/.*\)?' -delete && \
-    rm -rf doc .github .tx .semaphore *.md *.yaml LICENSE Dockerfile* \
-      .eslintrc .nvmrc .tool-versions res/.eslintrc && \
-    cd && \
-    rm -rf .npm .cache .config .local && \
-    cd /app; \
-  fi
-  
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-    export DEBIAN_FRONTEND=noninteractive && \
-    echo '--- Updating repositories' && \
-    apt-get update && \
-    echo '--- Upgrading repositories' && \
-    apt-get -y dist-upgrade && \
-    echo '--- Building node' && \
-    apt-get -y install pkg-config curl zip unzip wget python3 build-essential cmake ninja-build && \
-    cd /tmp && \
-    wget --progress=dot:mega \
-      https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-arm64.tar.xz && \
-    tar -xJf node-v*.tar.xz --strip-components 1 -C /usr/local && \
-    rm node-v*.tar.xz && \
-    useradd --system \
-      --create-home \
-      --shell /usr/sbin/nologin \
-      stf && \
-    su stf -s /bin/bash -c '/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js install' && \
-    apt-get -y install --no-install-recommends musl-dev libzmq3-dev libprotobuf-dev git graphicsmagick yasm && \
-    ln -s /usr/lib/aarch64-linux-musl/libc.so /lib/libc.musl-aarch64.so.1 && \
-    echo '--- Building app' && \
-    mkdir -p /app && \
-    chown -R stf:stf /tmp/build && \
-    set -x && \
-    cd /tmp/build && \
-    export PATH=$PWD/node_modules/.bin:$PATH && \
-    sed -i'' -e '/phantomjs/d' package.json && \
-    export VCPKG_FORCE_SYSTEM_BINARIES="arm" && \
-    echo 'npm install --save-dev pnpm' | su stf -s /bin/bash && \
-    echo 'npm install --python="/usr/bin/python3" --omit=optional --loglevel http' | su stf -s /bin/bash && \
-    echo '--- Assembling app' && \
-    echo 'npm pack' | su stf -s /bin/bash && \
-    tar xzf devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
-    echo '/tmp/build/node_modules/.bin/bower cache clean' | su stf -s /bin/bash && \
-    echo 'npm prune --omit=dev' | su stf -s /bin/bash && \
-    wget --progress=dot:mega \
-      https://github.com/google/bundletool/releases/download/1.2.0/bundletool-all-1.2.0.jar && \
-    mkdir -p /app/bundletool && \
-    mv bundletool-all-1.2.0.jar /app/bundletool/bundletool.jar && \
-    mv node_modules /app && \
-    chown -R root:root /app && \
-    echo '--- Cleaning up' && \
-    echo 'npm cache clean --force' | su stf -s /bin/bash && \
-    rm -rf ~/.node-gyp && \
-    apt-get -y purge pkg-config curl zip unzip wget python3 build-essential cmake ninja-build && \
-    apt-get -y clean && \
-    apt-get -y autoremove && \
-    cd /home/stf && \
-    rm -rf vcpkg .npm .cache .cmake-ts .config .local && \
-    rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
-    cd /app && \
-    rm -rf doc .github .tx .semaphore *.md *.yaml LICENSE Dockerfile* \
-      .eslintrc .nvmrc .tool-versions res/.eslintrc && \
-    rm -rf /tmp/*; \
-  fi
+    rm -rf /var/lib/apt/lists/* /tmp/*
 
-# Switch to the app user.
+WORKDIR /build
+COPY . .
+
+RUN sed -i '/phantomjs/d' package.json && \
+    npm config set registry https://registry.npmmirror.com && \
+    npm install --python="/usr/bin/python3" --omit=optional --no-audit --no-fund && \
+    npm pack && \
+    npm prune --omit=dev
+
+# ========== 运行阶段 ==========
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      libzmq5 libprotobuf17 graphicsmagick ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd --system --create-home --shell /bin/bash stf
+
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /usr/lib/jvm /usr/lib/jvm
+COPY --from=builder /build/devicefarmer-stf-*.tgz /tmp/
+COPY --from=builder /build/node_modules /app/node_modules
+
+RUN mkdir -p /app && \
+    tar xzf /tmp/devicefarmer-stf-*.tgz --strip-components 1 -C /app && \
+    rm -f /tmp/*.tgz && \
+    sed -i 's/--no-deprecation//g' /app/bin/stf 2>/dev/null || true && \
+    sed -i 's/--no-deprecation//g' /app/lib/cli/please.js 2>/dev/null || true && \
+    sed -i '1s|.*|#!/usr/bin/env node|' /app/bin/stf 2>/dev/null || true && \
+    mkdir -p /app/bundletool && \
+    chown -R stf:stf /app
+
+ENV PATH=/usr/local/bin:/app/bin:$PATH
+ENV JAVA_HOME=/usr/lib/jvm
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+WORKDIR /app
+EXPOSE 3000
 USER stf
 
-# Show help by default.
-CMD ["stf", "--help"]
+# 【修改】直接用 node 运行，移除启动脚本
+ENTRYPOINT ["/usr/local/bin/node", "lib/cli/please.js"]
+1111
