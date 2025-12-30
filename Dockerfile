@@ -69,4 +69,3 @@ USER stf
 
 # 【修改】直接用 node 运行，移除启动脚本
 ENTRYPOINT ["/usr/local/bin/node", "lib/cli/please.js"]
-1111
