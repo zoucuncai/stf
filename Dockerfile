@@ -28,6 +28,7 @@ RUN sed -i "s|http://archive.ubuntu.com/ubuntu|${APT_MIRROR}|g" /etc/apt/sources
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/*
 
+#测试
 WORKDIR /build
 COPY . .
 
