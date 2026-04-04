@@ -13,11 +13,25 @@ module.exports = angular.module('device-list', [
   require('./icons').name,
   require('./stats').name,
   require('./customize').name,
-  require('./search').name
+  require('./search').name,
+  require('./bulk-common').name,
+  require('./bulk-clear-cache').name,
+  require('./bulk-install').name,
+  require('./bulk-uninstall').name,
+  require('./bulk-push').name,
+  require('./bulk-reboot').name,
+  require('./bulk-shell').name,
+  require('./bulk-monkey').name,
+  require('./bulk-replay').name
+, require('./automation-records').name
 ])
   .config(['$routeProvider', function($routeProvider) {
     $routeProvider
       .when('/devices', {
+        template: require('./device-list.pug'),
+        controller: 'DeviceListCtrl'
+      })
+      .when('/devices/automation', {
         template: require('./device-list.pug'),
         controller: 'DeviceListCtrl'
       })

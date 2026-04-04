@@ -58,6 +58,22 @@ img.device-icon-smallest {
   margin-right: 3px;
 }
 
+.device-list-tab-rows .device-list-bulk-tabs-row {
+  margin-bottom: 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.device-list-tab-rows .device-list-bulk-panels {
+  border: 1px solid #ddd;
+  border-top: 0;
+  margin-bottom: 12px;
+  min-height: 24px;
+}
+
+.device-list-tab-rows .device-list-main-tabs-row {
+  margin-top: 4px;
+}
+
 .device-list-active-tabs.ng-enter {
   -webkit-transition: 250ms;
   transition: 250ms;
@@ -85,5 +101,14 @@ img.device-icon-smallest {
 }
 
 .stf-device-list .device-note:hover .device-note-edit {
+  visibility: visible;
+}
+
+.stf-device-list .device-responsible-edit {
+  margin-left: 15px;
+  visibility: hidden;
+}
+
+.stf-device-list .device-responsible:hover .device-responsible-edit {
   visibility: visible;
 }

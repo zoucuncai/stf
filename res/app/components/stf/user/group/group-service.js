@@ -31,20 +31,24 @@ module.exports = function GroupServiceFactory(
       })
   }
 
-  groupService.kick = function(device, force) {
+  groupService.kick = function(device, force, reason) {
     if (!force && !device.usable) {
       return Promise.reject(new Error('Device is not usable'))
     }
 
     var tx = TransactionService.create(device)
-    socket.emit('group.kick', device.channel, tx.channel, {
+    var payload = {
       requirements: {
         serial: {
           value: device.serial
         , match: 'exact'
         }
       }
-    })
+    }
+    if (reason) {
+      payload.reason = reason
+    }
+    socket.emit('group.kick', device.channel, tx.channel, payload)
     return tx.promise
       .then(function(result) {
         return result.device

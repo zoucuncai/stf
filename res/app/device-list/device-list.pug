@@ -1,9 +1,9 @@
 .stf-device-list
-  .row.stf-stats-container.unselectable
+  .row.stf-stats-container.unselectable(ng-if='!automationRecordsView')
     .col-md-12
       device-list-stats(tracker='tracker')
 
-  .row.unselectable
+  .row.unselectable(ng-if='!automationRecordsView')
     .col-md-12
       .widget-container.fluid-height.stf-device-list-tabs
         .widget-content.padded
@@ -38,19 +38,69 @@
                       i.fa.fa-trash-o
                       span(ng-bind='"Reset"|translate')
 
-          uib-tabset.overflow-auto.device-list-active-tabs(ng-if='activeTabs')
-            uib-tab(active='activeTabs.icons', select='focusSearch()')
-              uib-tab-heading
-                i.fa.fa-th-large
-                span(translate) Devices
-              div.device-list-devices-content(ng-if='activeTabs.icons').selectable
+          .device-list-tab-rows(ng-if='activeTabs')
+            ul.nav.nav-tabs.device-list-bulk-tabs-row.overflow-auto
+              li(ng-class='{active: activeTabs.bulkInstall}')
+                a(href='#' ng-click='activateBulkTab("bulkInstall"); $event.preventDefault()')
+                  i.fa.fa-download
+                  span(translate) 批量安装
+              li(ng-class='{active: activeTabs.bulkUninstall}')
+                a(href='#' ng-click='activateBulkTab("bulkUninstall"); $event.preventDefault()')
+                  i.fa.fa-trash
+                  span(translate) 批量卸载
+              li(ng-class='{active: activeTabs.bulkPush}')
+                a(href='#' ng-click='activateBulkTab("bulkPush"); $event.preventDefault()')
+                  i.fa.fa-upload
+                  span(translate) 批量推送
+              li(ng-class='{active: activeTabs.bulkShell}')
+                a(href='#' ng-click='activateBulkTab("bulkShell"); $event.preventDefault()')
+                  i.fa.fa-terminal
+                  span(translate) 批量Shell
+              li(ng-class='{active: activeTabs.bulkReboot}')
+                a(href='#' ng-click='activateBulkTab("bulkReboot"); $event.preventDefault()')
+                  i.fa.fa-repeat
+                  span(translate) 批量重启
+              li(ng-class='{active: activeTabs.bulkClearCache}')
+                a(href='#' ng-click='activateBulkTab("bulkClearCache"); $event.preventDefault()')
+                  i.fa.fa-eraser
+                  span(translate) 批量清缓存
+              li(ng-class='{active: activeTabs.bulkMonkey}')
+                a(href='#' ng-click='activateBulkTab("bulkMonkey"); $event.preventDefault()')
+                  i.fa.fa-random
+                  span(translate) 批量Monkey测试
+              li(ng-class='{active: activeTabs.bulkReplay}')
+                a(href='#' ng-click='activateBulkTab("bulkReplay"); $event.preventDefault()')
+                  i.fa.fa-play
+                  span(translate) 批量回放
 
-                device-list-icons(tracker='tracker', columns='columns', sort='sort', filter='filter')
+            .device-list-bulk-panels.padded
+              device-list-bulk-clear-cache(ng-if='activeTabs.bulkClearCache')
+              device-list-bulk-install(ng-if='activeTabs.bulkInstall')
+              device-list-bulk-uninstall(ng-if='activeTabs.bulkUninstall')
+              device-list-bulk-push(ng-if='activeTabs.bulkPush')
+              device-list-bulk-reboot(ng-if='activeTabs.bulkReboot')
+              device-list-bulk-shell(ng-if='activeTabs.bulkShell')
+              device-list-bulk-monkey(ng-if='activeTabs.bulkMonkey')
+              device-list-bulk-replay(ng-if='activeTabs.bulkReplay')
+              p.text-muted(ng-if='!activeTabs.bulkClearCache && !activeTabs.bulkInstall && !activeTabs.bulkUninstall && !activeTabs.bulkPush && !activeTabs.bulkReboot && !activeTabs.bulkShell && !activeTabs.bulkMonkey && !activeTabs.bulkReplay')
+                | 点击上方批量操作标签以展开功能
 
-            uib-tab(active='activeTabs.details', select='focusSearch()', ng-if='!$root.basicMode')
-              uib-tab-heading
-                i.fa.fa-list
-                span(translate) Details
-              div.device-list-details-content(ng-if='activeTabs.details').selectable
+            uib-tabset.overflow-auto.device-list-main-tabs-row
+              uib-tab(active='activeTabs.icons', select='activateMainTab("icons")')
+                uib-tab-heading
+                  i.fa.fa-th-large
+                  span(translate) Devices
+                div.device-list-devices-content(ng-if='activeTabs.icons').selectable
+                  device-list-icons(tracker='tracker', columns='columns', sort='sort', filter='filter')
 
-                device-list-details(tracker='tracker', columns='columns', sort='sort', filter='filter').selectable
+              uib-tab(active='activeTabs.details', select='activateMainTab("details")', ng-if='!$root.basicMode')
+                uib-tab-heading
+                  i.fa.fa-list
+                  span(translate) Details
+                div.device-list-details-content(ng-if='activeTabs.details').selectable
+
+                  device-list-details(tracker='tracker', columns='columns', sort='sort', filter='filter').selectable
+
+  .row.unselectable(ng-if='automationRecordsView')
+    .col-md-12.stf-device-list-tabs
+      device-list-automation-records

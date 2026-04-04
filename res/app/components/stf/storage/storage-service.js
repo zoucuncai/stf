@@ -1,7 +1,22 @@
 var Promise = require('bluebird')
 
-module.exports = function StorageServiceFactory($http, $upload) {
+module.exports = function StorageServiceFactory($http, Upload) {
   var service = {}
+
+  // POST /s/upload returns resources keyed by multipart field names. ng-file-upload uses
+  // "file" for a single File, but "file[0]", "file[1]", ... for an array — so resources.file may be absent.
+  service.getFileResourceFromResponse = function(response) {
+    var data = response && response.data
+    if (!data || !data.resources) {
+      return null
+    }
+    var resources = data.resources
+    if (resources.file) {
+      return resources.file
+    }
+    var keys = Object.keys(resources)
+    return keys.length ? resources[keys[0]] : null
+  }
 
   service.storeUrl = function(type, url) {
     return $http({
@@ -18,10 +33,13 @@ module.exports = function StorageServiceFactory($http, $upload) {
     var input = options.filter ? files.filter(options.filter) : files
 
     if (input.length) {
-      $upload.upload({
+      // Single file must be passed as a File, not [File], or the field name becomes file[0] and
+      // clients expecting resources.file break.
+      var fileField = input.length === 1 ? input[0] : input
+      Upload.upload({
           url: '/s/upload/' + type
         , method: 'POST'
-        , file: input
+        , file: fileField
         })
         .then(
           function(value) {

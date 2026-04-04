@@ -3,7 +3,7 @@ require('./install.css')
 require('ng-file-upload')
 
 module.exports = angular.module('stf.install', [
-  'angularFileUpload',
+  'ngFileUpload',
   require('./activities').name,
   require('stf/settings').name,
   require('stf/storage').name,

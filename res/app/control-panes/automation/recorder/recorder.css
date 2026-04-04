@@ -1,0 +1,78 @@
+.widget-container .heading {
+  font-weight: 600;
+}
+
+.automation-recorder-panel .automation-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 18px;
+  margin-bottom: 10px;
+}
+
+.automation-recorder-panel .automation-toolbar .automation-field label,
+.automation-recorder-panel .assertion-toolbar .automation-field label {
+  display: block;
+  font-weight: normal;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.automation-recorder-panel .automation-toolbar .automation-field input[type='text'],
+.automation-recorder-panel .automation-toolbar .automation-field select {
+  min-width: 200px;
+}
+
+.automation-recorder-panel .automation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.automation-recorder-panel .assertion-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 18px;
+  margin-bottom: 10px;
+}
+
+.automation-recorder-panel .assertion-toolbar .form-control.input-sm {
+  min-width: 140px;
+}
+
+.automation-recorder-panel .assertion-toolbar input[type='text'].form-control.input-sm {
+  min-width: 260px;
+}
+
+.automation-recorder-panel .wait-step-input.form-control.input-sm {
+  min-width: 110px;
+  max-width: 110px;
+}
+
+.automation-recorder-panel .wait-step-input-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.automation-recorder-panel .wait-step-input-group .btn {
+  margin-left: 0;
+}
+
+.automation-recorder-panel .assertion-toolbar .btn,
+.automation-recorder-panel .automation-actions .btn {
+  margin-left: 0;
+}
+
+.automation-recorder-panel .detail-replay-records {
+  margin-top: 12px;
+}
+
+.automation-recorder-panel .automation-detail-replay-table thead > tr > th,
+.automation-recorder-panel .automation-detail-replay-table tbody > tr > td {
+  vertical-align: middle;
+  font-size: 12px;
+}

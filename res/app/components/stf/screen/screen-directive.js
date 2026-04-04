@@ -9,6 +9,7 @@ module.exports = function DeviceScreenDirective(
 , PageVisibilityService
 , $timeout
 , $window
+, $rootScope
 ) {
   return {
     restrict: 'E'
@@ -610,6 +611,18 @@ module.exports = function DeviceScreenDirective(
           }
 
           control.touchCommit(nextSeq())
+
+          // Recorder hook: broadcast tap coordinates (percent, 0..1)
+          try {
+            $rootScope.$broadcast('stf.recorder.tap', {
+              xP: scaled.xP
+            , yP: scaled.yP
+            , rotation: screen.rotation
+            , timestamp: Date.now()
+            })
+          }
+          catch (e) {
+          }
 
           activateFinger(0, x, y, pressure)
 

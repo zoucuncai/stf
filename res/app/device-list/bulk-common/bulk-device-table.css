@@ -1,0 +1,9 @@
+.bulk-device-table-wrap {
+  margin-top: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.bulk-device-table thead th {
+  background: #f7f7f7;
+}

@@ -80,6 +80,7 @@ enum MessageType {
   ReverseForwardsEvent       = 72;
   FileSystemListMessage      = 81;
   FileSystemGetMessage       = 82;
+  FileSystemPushMessage      = 97;
   ConnectStartedMessage      = 92;
   ConnectStoppedMessage      = 93;
   BluetoothSetEnabledMessage = 94;
@@ -269,6 +270,12 @@ message FileSystemListMessage {
 
 message FileSystemGetMessage {
   required string file = 1;
+}
+
+message FileSystemPushMessage {
+  required string href = 1;
+  required string target = 2;
+  optional string filename = 3;
 }
 
 message Envelope {
@@ -474,6 +481,8 @@ message AutoGroupMessage {
 
 message UngroupMessage {
   repeated DeviceRequirement requirements = 2;
+  // When set to "bulk_task_release", cleanup skips removePackages so session installs stay until a normal user release.
+  optional string reason = 3;
 }
 
 message JoinGroupMessage {
@@ -618,6 +627,8 @@ message InstallMessage {
   required string href = 1;
   required bool launch = 2;
   optional string manifest = 3;
+  // If true, do not uninstall this package when the control session ends (cleanup).
+  optional bool persist_after_session = 4 [default = false];
 }
 
 message UninstallMessage {

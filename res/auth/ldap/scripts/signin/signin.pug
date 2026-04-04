@@ -26,21 +26,20 @@
         .input-group
           span.input-group-addon
             i.fa.fa-lock
-          input.form-control(ng-model='password', name='password', required, type='password', placeholder='Password',
+          input.form-control(ng-model='password', name='password', required, type='{{showPassword ? "text" : "password"}}', placeholder='Password',
           autocorrect='off', autocapitalize='off', spellcheck='false', autocomplete='section-login current-password')
+          span.input-group-btn
+            button.btn.btn-default(type='button', ng-click='togglePasswordVisible()')
+              i.fa(ng-class='showPassword ? "fa-eye-slash" : "fa-eye"')
         .alert.alert-warning(ng-show='signin.password.$dirty && signin.password.$invalid')
           span(translate) Please enter your password
 
+      .checkbox.m-t-sm
+        label
+          input(type='checkbox', ng-model='rememberPassword')
+          span(translate) Remember password
+
       input.btn.btn-lg.btn-primary.btn-block(type='submit', value='Log In')
 
-      button.btn.btn-sm.btn-default-outline(
-        type='button'
-        uib-tooltip="{{'Write a mail to the support team' | translate}}"
-        ng-disabled='!contactEmail'
-        ng-click='mailToSupport()'
-        tooltip-placement='top'
-        tooltip-popup-delay='500')
-          i.fa.fa-envelope-o
-          span(translate) Contact Support 
 
 

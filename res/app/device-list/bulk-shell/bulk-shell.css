@@ -1,0 +1,9 @@
+.bulk-action-panel {
+  margin-top: 8px;
+}
+
+.bulk-shell-command {
+  width: 100%;
+  min-height: 72px;
+  font-family: Consolas, "Courier New", monospace;
+}

@@ -25,22 +25,20 @@
       .form-group
         .input-group
           span.input-group-addon
-            i.fa.fa-envelope
-          input.form-control(ng-model='email', name='email', required, type='email', placeholder='邮箱地址',
-          autocorrect='off', autocapitalize='off', spellcheck='false', autocomplete='section-login email')
-        .alert.alert-warning(ng-show='signin.email.$dirty && signin.email.$invalid')
-          span(ng-show='signin.email.$error.email', translate) 请输入有效的邮箱地址
-          span(ng-show='signin.email.$error.required', translate) 请输入您的邮箱地址
+            i.fa.fa-lock
+          input.form-control(ng-model='password', name='password', required, type='{{showPassword ? "text" : "password"}}', placeholder='密码',
+          autocorrect='off', autocapitalize='off', spellcheck='false', autocomplete='current-password')
+          span.input-group-btn
+            button.btn.btn-default(type='button', ng-click='togglePasswordVisible()')
+              i.fa(ng-class='showPassword ? "fa-eye-slash" : "fa-eye"')
+        .alert.alert-warning(ng-show='signin.password.$dirty && signin.password.$invalid')
+          span(translate) 请输入您的密码
+
+      .checkbox.m-t-sm
+        label
+          input(type='checkbox', ng-model='rememberPassword')
+          span(translate) 记住密码
 
       input.btn.btn-lg.btn-primary.btn-block(type='submit', value='登录')
 
-      button.btn.btn-sm.btn-default-outline(
-        type='button'
-        uib-tooltip="{{'给支持团队发送邮件' | translate}}"
-        ng-disabled='!contactEmail'
-        ng-click='mailToSupport()'
-        tooltip-placement='top'
-        tooltip-popup-delay='500')
-          i.fa.fa-envelope-o
-          span(translate) 联系支持团队
 

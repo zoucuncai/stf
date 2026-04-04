@@ -124,6 +124,35 @@ module.exports = function DeviceListDetailsDirective(
         }
       }
 
+      // On clicking device-responsible-edit icon (admin-only).
+      function checkDeviceResponsible(e) {
+        if (e.target.classList.contains('device-responsible-edit')) {
+          var i = e.target
+          var id = i.parentNode.parentNode.id
+          var device = mapping[id]
+          var xeditableWrapper = i.parentNode.firstChild
+          var xeditableSpan = document.createElement('span')
+          var childScope = scope.$new()
+
+          // Bind responsible email into a dedicated property for xeditable.
+          device.responsibleEmail = device.responsible ? device.responsible.email : ''
+
+          xeditableSpan.setAttribute('editable-text', 'device.responsibleEmail')
+          xeditableSpan.setAttribute('onbeforesave', 'updateResponsible(id, device.serial, $data)')
+          xeditableSpan.setAttribute('onCancel', 'onDeviceResponsibleCancel(id)')
+
+          childScope.id = id
+          childScope.device = device
+          childScopes[id] = childScope
+
+          $compile(xeditableSpan)(childScope)
+          xeditableWrapper.appendChild(xeditableSpan)
+
+          // Trigger click to open the form.
+          angular.element(xeditableSpan).triggerHandler('click')
+        }
+      }
+
       function destroyXeditableNote(id) {
         var tr = tbody.children[id]
         for (var i = 0; i < tr.cells.length; i++) {
@@ -150,7 +179,16 @@ module.exports = function DeviceListDetailsDirective(
         destroyXeditableNote(id)
       }
 
+      scope.updateResponsible = function(id, serial, responsibleEmail) {
+        DeviceService.updateResponsible(serial, responsibleEmail)
+        destroyXeditableNote(id)
+      }
+
       scope.onDeviceNoteCancel = function(id) {
+        destroyXeditableNote(id)
+      }
+
+      scope.onDeviceResponsibleCancel = function(id) {
         destroyXeditableNote(id)
       }
 
@@ -158,6 +196,7 @@ module.exports = function DeviceListDetailsDirective(
         checkDeviceStatus(e)
         checkDeviceSmallImage(e)
         checkDeviceNote(e)
+        checkDeviceResponsible(e)
       })
 
       // Import column definitions

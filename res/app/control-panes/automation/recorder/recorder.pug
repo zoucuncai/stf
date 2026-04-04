@@ -1,0 +1,129 @@
+.widget-container.fluid-height.automation-recorder-panel
+  .heading
+    i.fa.fa-dot-circle-o
+    span(translate) 录制与回放
+  .widget-content.padded
+    .automation-toolbar
+      .automation-field(ng-class='{"has-error": recordingNameTaken}')
+        label 录制名称
+        input.form-control.input-sm(type='text' ng-model='recordingForm.name' ng-change='validateRecordingName()' placeholder='请输入录制名称')
+      .automation-actions
+        button.btn.btn-sm.btn-primary(ng-click='startRecording()' ng-disabled='recordingActive')
+          span(translate) 开始录制
+        button.btn.btn-sm.btn-danger-outline(ng-click='stopRecording()' ng-disabled='!recordingActive')
+          span(translate) 结束录制
+    .text-danger.m-t-sm(ng-if='recordingError') {{recordingError}}
+
+    .m-t-sm
+      .heading
+        i.fa.fa-check-square-o
+        span(translate) 断言配置（录制时保存）
+      .widget-content.padded
+        .assertion-toolbar
+          .automation-field
+            label 断言类型
+            select.form-control.input-sm(ng-model='assertionDraft.type' ng-disabled='recordingLocked')
+              option(value='visual') 视觉断言
+              option(value='text') 文本断言
+          .automation-field(ng-if='assertionDraft.type==="text"')
+            label 期望文本
+            input.form-control.input-sm(type='text' ng-model='assertionDraft.expectedText' placeholder='例如：登录成功' ng-disabled='recordingLocked')
+          .automation-field(ng-if='assertionDraft.type==="visual"')
+            label 阈值
+            input.form-control.input-sm(type='number' ng-model='assertionDraft.threshold' placeholder='0.95' ng-disabled='recordingLocked')
+          .automation-actions
+            button.btn.btn-sm.btn-default(ng-if='assertionDraft.type==="text"' ng-click='addTextAssertion()' ng-disabled='recordingLocked || !recordingActive')
+              span(translate) 添加文本断言
+            button.btn.btn-sm.btn-default(ng-if='assertionDraft.type==="visual"' ng-click='captureVisualBaseline()' ng-disabled='recordingLocked || !recordingActive || baselineBusy')
+              span(ng-if='!baselineBusy', translate) 拍摄当前作为视觉基线
+              span(ng-if='baselineBusy') 拍摄中…
+
+        .m-t-sm
+          .automation-field
+            label 等待(秒)
+            .wait-step-input-group
+              input.form-control.input-sm.wait-step-input(type='number' ng-model='waitStepSeconds' min='0' step='0.1' placeholder='0' ng-disabled='recordingLocked')
+              button.btn.btn-sm.btn-default(ng-disabled='recordingLocked || !recordingActive || !waitStepSeconds || Number(waitStepSeconds) <= 0' ng-click='addWaitStep()')
+                span(translate) 添加等待
+
+        table.table.table-condensed.table-bordered(ng-if='recordingSteps.length>0')
+          thead
+            tr
+              th 断言/步骤
+              th 参数
+              th(style='width:120px') 操作
+          tbody
+            tr(ng-repeat='s in pagedRecordingSteps() track by s._id')
+              td
+                span(ng-if='s.action==="wait"') 等待={{s.waitMs != null ? (s.waitMs/1000) : 0}}s
+                span(ng-if='s.action!=="wait"') {{s.action === 'tap' ? ('tap' + tapOrdinalForStep(recordingSteps, ((recordingStepPage - 1) * recordingStepPageSize) + $index)) : s.action}}
+              td
+                span(ng-if='s.action==="assert_visual_match"') baseline={{s.baselineIndex}}
+                span(ng-if='s.action==="assert_text_contains"') expectedText={{s.expectedText}}
+              td
+                button.btn.btn-xs.btn-default(type='button' ng-click='editStepAt(((recordingStepPage - 1) * recordingStepPageSize) + $index)' ng-disabled='!canMutateStep(s)') 修改
+                button.btn.btn-xs.btn-danger-outline.m-l-xs(type='button' ng-click='deleteStepAt(((recordingStepPage - 1) * recordingStepPageSize) + $index)' ng-disabled='!canMutateStep(s)') 删除
+        .text-center.m-t-sm(ng-if='recordingStepTotalPages() > 1')
+          button.btn.btn-xs.btn-default(ng-disabled='recordingStepPage <= 1' ng-click='prevRecordingStepPage()')
+            span 上一页
+          span.m-l-sm.m-r-sm
+            | 第 {{recordingStepPage}} / {{recordingStepTotalPages()}} 页
+          button.btn.btn-xs.btn-default(ng-disabled='recordingStepPage >= recordingStepTotalPages()' ng-click='nextRecordingStepPage()')
+            span 下一页
+
+    .m-t-sm
+      .heading
+        i.fa.fa-mail-forward
+        span(translate) 回放（到当前设备）
+      .widget-content.padded
+        .automation-toolbar(ng-if='recordings.length')
+          .automation-field
+            label 选择录制
+            select.form-control.input-sm(
+              ng-model='selectedRecordingId'
+            , ng-options='r.id as (r.name + " · " + r.id.slice(0, 8)) for r in recordings track by r.id'
+            , ng-disabled='replayState.running || replayState.launching')
+          .automation-actions
+            button.btn.btn-sm.btn-default(type='button' ng-click='downloadSelectedRecording(selectedRecordingId)' ng-disabled='!selectedRecordingId || replayState.launching')
+              span(translate) 下载脚本
+            button.btn.btn-sm.btn-success(type='button' ng-click='startReplayBySelection(selectedRecordingId)' ng-disabled='replayState.running || replayState.launching || !selectedRecordingId')
+              span(translate) 回放到当前设备
+
+    .m-t-md.detail-replay-records(ng-if='detailReplayRows.length')
+      .heading
+        i.fa.fa-flask
+        span 本页回放记录
+      .table-responsive
+        table.table.table-bordered.table-condensed.automation-detail-replay-table
+          thead
+            tr
+              th(style='width:72px') 类型
+              th 运行ID
+              th 名称
+              th 参数
+              th 创建人
+              th 状态
+              th 进度
+              th 成功数
+              th 失败数
+              th 成功率
+              th 开始时间
+              th 结束时间
+              th(style='width:88px') 操作
+          tbody
+            tr(ng-repeat='row in detailReplayRows track by row._track')
+              td.selectable {{row.kindLabel}}
+              td.selectable {{row.id}}
+              td.selectable {{row.title}}
+              td.selectable {{row.params}}
+              td.selectable {{row.owner}}
+              td {{row.statusText}}
+              td {{row.progressText}}
+              td {{row.successCount}}
+              td {{row.failCount}}
+              td {{(row.passRate != null ? (row.passRate.toFixed ? row.passRate.toFixed(2) : row.passRate) : 0)}}%
+              td.selectable {{row.started}}
+              td.selectable {{row.ended}}
+              td
+                a.btn.btn-xs.btn-primary(ng-href="{{row.downloadUrl}}" target='_blank' rel='noopener') 下载
+

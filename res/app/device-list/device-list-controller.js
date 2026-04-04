@@ -132,6 +132,10 @@ module.exports = function DeviceListCtrl(
     , selected: true
     }
   , {
+      name: 'responsible'
+    , selected: true
+    }
+  , {
       name: 'group'
     , selected: false
     }
@@ -192,14 +196,105 @@ module.exports = function DeviceListCtrl(
 
   $scope.filter = []
 
+  $scope.automationRecordsView = $location.path() === '/devices/automation'
+
   $scope.activeTabs = {
     icons: true
   , details: false
+  , bulkClearCache: false
+  , bulkInstall: false
+  , bulkUninstall: false
+  , bulkPush: false
+  , bulkReboot: false
+  , bulkShell: false
+  , bulkMonkey: false
+  , bulkReplay: false
+  }
+
+  $scope.batchSelection = {
+    mode: 'all'
+  , selected: {}
+  }
+
+  $scope.getBatchDevicesForUi = function() {
+    return ($scope.tracker.devices || []).filter(function(device) {
+      return device && device.present && device.ready
+    })
+  }
+
+  $scope.isBatchSelectableDevice = function(device) {
+    if (!device) {
+      return false
+    }
+    return device.state === 'available' && device.usable && !device.using
+  }
+
+  $scope.batchDeviceNameText = function(device) {
+    if (!device) {
+      return ''
+    }
+    return device.name || device.marketName || device.serial || ''
+  }
+
+  $scope.batchDeviceModelText = function(device) {
+    if (!device) {
+      return ''
+    }
+    return device.model || device.serial || ''
+  }
+
+  $scope.batchDeviceStatusText = function(device) {
+    if (!device) {
+      return ''
+    }
+    return $scope.isBatchSelectableDevice(device) ? '可用' : '被占用'
+  }
+
+  $scope.toggleAllBatchCandidates = function(flag) {
+    $scope.getBatchDevicesForUi().forEach(function(device) {
+      if ($scope.isBatchSelectableDevice(device)) {
+        $scope.batchSelection.selected[device.serial] = !!flag
+      }
+    })
+  }
+
+  var bulkTabKeys = [
+    'bulkClearCache'
+  , 'bulkInstall'
+  , 'bulkUninstall'
+  , 'bulkPush'
+  , 'bulkReboot'
+  , 'bulkShell'
+  , 'bulkMonkey'
+  , 'bulkReplay'
+  ]
+
+  $scope.activateBulkTab = function(name) {
+    var wasActive = $scope.activeTabs[name]
+    bulkTabKeys.forEach(function(k) {
+      $scope.activeTabs[k] = false
+    })
+    if (!wasActive) {
+      $scope.activeTabs[name] = true
+    }
+  }
+
+  $scope.activateMainTab = function(name) {
+    $scope.activeTabs.icons = (name === 'icons')
+    $scope.activeTabs.details = (name === 'details')
   }
 
   SettingsService.bind($scope, {
     target: 'activeTabs'
   , source: 'deviceListActiveTabs'
+  })
+
+  if ($scope.activeTabs.hasOwnProperty('automationRecords')) {
+    delete $scope.activeTabs.automationRecords
+  }
+
+  $scope.$on('$routeChangeSuccess', function() {
+    $scope.automationRecordsView = $location.path() === '/devices/automation'
   })
 
   $scope.toggle = function(device) {

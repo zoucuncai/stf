@@ -1,0 +1,39 @@
+.bulk-action-panel
+  .heading
+    i.fa.fa-eraser
+    span(translate) 批量清缓存
+  .widget-content.padded
+    .form-inline.m-b-sm
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='all')
+        | 全部可用设备
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='selected')
+        | 勾选设备
+    device-list-bulk-device-table
+
+    .form-inline
+      .form-group.text-muted
+        span 说明：执行 pm trim-caches；下表根据 df「可用」空间变化估算释放量（仅供参考）。
+      button.btn.btn-sm.btn-primary(ng-click='runBulkClearCache()' ng-disabled='bulkClearCacheRunning')
+        span(translate) 开始
+    .m-t-xs(ng-if='bulkClearCacheProgress.total>0')
+      .text-muted 进度：{{bulkClearCacheProgress.done}} / {{bulkClearCacheProgress.total}}
+
+    .m-t-sm(ng-if='bulkClearCacheResults.length')
+      table.table.table-bordered.table-condensed.bulk-clear-cache-summary
+        thead
+          tr
+            th 设备
+            th 状态
+            th 释放约
+        tbody
+          tr(ng-repeat='item in bulkClearCacheResults track by $index')
+            td.selectable {{item.serial}}
+            td
+              span.label(ng-class="item.ok ? 'label-success' : 'label-danger'") {{item.ok ? '成功' : '失败'}}
+              span(ng-if='!item.ok && item.error')  {{item.error}}
+            td
+              span(ng-if='item.ok && item.data') {{item.data.freedHuman}}
+              span(ng-if='item.ok && (!item.data || !item.data.freedHuman)') —
+              span(ng-if='!item.ok') —

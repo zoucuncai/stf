@@ -845,6 +845,11 @@ paths:
           description: User name
           required: true
           type: string
+        - name: password
+          in: query
+          description: User password
+          required: true
+          type: string
       responses:
         "201":
           description: User information
@@ -924,6 +929,436 @@ paths:
               * 503: Service Unavailable => server too busy or a lock on a resource is pending
           schema:
             $ref: "#/definitions/UnexpectedErrorResponse"
+      security:
+        - accessTokenAuth: []
+
+  /automation/recordings:
+    x-swagger-router-controller: automation
+    get:
+      summary: List automation recordings
+      operationId: listRecordings
+      tags:
+        - user
+      responses:
+        "200":
+          description: Recordings
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              recordings:
+                type: array
+                items:
+                  type: object
+      security:
+        - accessTokenAuth: []
+    post:
+      summary: Create automation recording
+      operationId: createRecording
+      tags:
+        - user
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              stepsJson:
+                type: array
+                items:
+                  type: object
+              baselinesMeta:
+                type: array
+                items:
+                  type: object
+              pythonCode:
+                type: string
+      responses:
+        "201":
+          description: Created recording
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              recording:
+                type: object
+      security:
+        - accessTokenAuth: []
+  /automation/recordings/{id}:
+    x-swagger-router-controller: automation
+    get:
+      summary: Get automation recording by id
+      operationId: getRecording
+      tags:
+        - user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Recording
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              recording:
+                type: object
+      security:
+        - accessTokenAuth: []
+  /automation/recordings/{id}/download:
+    x-swagger-router-controller: automation
+    get:
+      summary: Download automation recording script
+      operationId: downloadRecording
+      tags:
+        - user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Python script content
+      security:
+        - accessTokenAuth: []
+
+  /automation/replay/runs:
+    x-swagger-router-controller: automation
+    get:
+      summary: List replay runs
+      operationId: listReplayRuns
+      tags:
+        - user
+      responses:
+        "200":
+          description: Replay runs
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              runs:
+                type: array
+                items:
+                  type: object
+      security:
+        - accessTokenAuth: []
+    post:
+      summary: Create replay run
+      operationId: createReplayRun
+      tags:
+        - user
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [recordingId, targets]
+            properties:
+              recordingId:
+                type: string
+              targets:
+                type: array
+                items:
+                  type: string
+      responses:
+        "201":
+          description: Replay run created
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              run:
+                type: object
+      security:
+        - accessTokenAuth: []
+  /automation/replay/runs/{runId}/report:
+    x-swagger-router-controller: automation
+    get:
+      summary: Get replay run report
+      operationId: getReplayRunReport
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Replay report
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              run:
+                type: object
+              devices:
+                type: array
+                items:
+                  type: object
+      security:
+        - accessTokenAuth: []
+  /automation/replay/runs/{runId}/complete:
+    x-swagger-router-controller: automation
+    post:
+      summary: Complete automation replay run (client-side assertions)
+      operationId: completeReplayRun
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [devices]
+            properties:
+              devices:
+                type: array
+                items:
+                  type: object
+                  required: [serial, totalCases, successCases]
+                  properties:
+                    serial:
+                      type: string
+                    status:
+                      type: string
+                    result:
+                      type: string
+                    totalCases:
+                      type: integer
+                    successCases:
+                      type: integer
+                    error:
+                      type: string
+                    endedAt:
+                      type: string
+      responses:
+        "200":
+          description: Replay run completed
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              runId:
+                type: string
+      security:
+        - accessTokenAuth: []
+  /automation/replay/runs/{runId}/csv:
+    x-swagger-router-controller: automation
+    get:
+      summary: Download replay CSV
+      operationId: downloadReplayCsv
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: CSV
+      security:
+        - accessTokenAuth: []
+  /automation/monkey/runs:
+    x-swagger-router-controller: automation
+    get:
+      summary: List monkey runs
+      operationId: listMonkeyRuns
+      tags:
+        - user
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          default: 20
+        - name: createdBy
+          in: query
+          required: false
+          type: string
+        - name: packageName
+          in: query
+          required: false
+          type: string
+      responses:
+        "200":
+          description: Monkey runs
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              total:
+                type: integer
+              runs:
+                type: array
+                items:
+                  type: object
+      security:
+        - accessTokenAuth: []
+    post:
+      summary: Create monkey run
+      operationId: createMonkeyRun
+      tags:
+        - user
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [packageName, targets]
+            properties:
+              packageName:
+                type: string
+              eventCount:
+                type: integer
+              throttleMs:
+                type: integer
+              seed:
+                type: string
+              targets:
+                type: array
+                items:
+                  type: string
+      responses:
+        "201":
+          description: Monkey run created
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              run:
+                type: object
+      security:
+        - accessTokenAuth: []
+  /automation/monkey/runs/{runId}/report:
+    x-swagger-router-controller: automation
+    get:
+      summary: Get monkey report
+      operationId: getMonkeyRunReport
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Monkey report
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              run:
+                type: object
+              devices:
+                type: array
+                items:
+                  type: object
+      security:
+        - accessTokenAuth: []
+  /automation/monkey/runs/{runId}/csv:
+    x-swagger-router-controller: automation
+    get:
+      summary: Download monkey CSV
+      operationId: downloadMonkeyCsv
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: CSV
+      security:
+        - accessTokenAuth: []
+  /automation/monkey/runs/{runId}/complete:
+    x-swagger-router-controller: automation
+    post:
+      summary: Complete monkey run (client-reported)
+      operationId: completeMonkeyRun
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [devices]
+            properties:
+              devices:
+                type: array
+                items:
+                  type: object
+                  required: [serial]
+                  properties:
+                    serial:
+                      type: string
+                    status:
+                      type: string
+                    outputSnippet:
+                      type: string
+                    output:
+                      type: string
+                    deviceName:
+                      type: string
+                    deviceModel:
+                      type: string
+                    startedAt:
+                      type: string
+                    endedAt:
+                      type: string
+                    startDate:
+                      type: string
+                    endDate:
+                      type: string
+      responses:
+        "200":
+          description: Monkey run updated/completed
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
       security:
         - accessTokenAuth: []
   /users/{email}/groupsQuotas:

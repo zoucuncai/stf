@@ -67,6 +67,7 @@ module.exports = function UsersCtrl(
   })
   $scope.users = []
   $scope.confirmRemove = {value: true}
+  $scope.showCreateUserPassword = false
   $scope.scopeUsersCtrl = $scope
   $scope.itemsPerPageOptions = ItemsPerPageOptionsService
   SettingsService.bind($scope, {
@@ -180,8 +181,11 @@ module.exports = function UsersCtrl(
   }
 
   $scope.initTemporaryUser = function() {
-    $scope.tmpEnv.userName = $scope.tmpEnv.userEmail = ''
+    $scope.tmpEnv.userName = ''
+    $scope.tmpEnv.userEmail = ''
+    $scope.tmpEnv.userPassword = ''
     $scope.tmpEnv.userTooltip = 'Bad syntax'
+    $scope.showCreateUserPassword = false
   }
 
   $scope.conditionForQuotasSaving = function(user, formInvalidStatus) {
@@ -209,7 +213,7 @@ module.exports = function UsersCtrl(
   $scope.createUser = function() {
     CommonService.errorWrapper(
       UsersService.createUser
-    , [$scope.tmpEnv.userName, $scope.tmpEnv.userEmail]
+    , [$scope.tmpEnv.userName, $scope.tmpEnv.userEmail, $scope.tmpEnv.userPassword]
     )
   }
 

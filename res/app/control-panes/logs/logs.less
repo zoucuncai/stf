@@ -1,7 +1,31 @@
 .stf-logs {
+  height: 100%;
+  min-height: 0;
+
+  /* Flex column: filter row natural height, log list fills remainder (see logcat-table.css). */
+  > .widget-container.fluid-height {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .widget-content {
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   .logcat-filters-table {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 2;
     margin-bottom: 0;
+    background: #fff;
     box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    table-layout: auto;
   }
 
   .logcat-filters-table .btn {
@@ -15,5 +39,37 @@
   .logcat-filters-table tbody > tr > td,
   .logcat-filters-table tfoot > tr > td {
     border-top: none;
+    vertical-align: middle;
+    padding: 12px 10px 14px;
+    overflow: visible;
   }
+
+  .logcat-filters-table tbody > tr > td > select.input-sm,
+  .logcat-filters-table tbody > tr > td > select.form-control {
+    min-width: 120px;
+  }
+
+  .logcat-filters-table tbody > tr > td > input.form-control {
+    min-width: 108px;
+  }
+
+  .logcat-filters-table tbody > tr > td.logcat-filter-message > input.form-control {
+    min-width: 220px;
+    width: 100%;
+  }
+
+  .logcat-filters-table tbody > tr > td.logcat-filter-actions {
+    white-space: nowrap;
+  }
+
+  /* input-sm + form-control: explicit height so descenders/borders are not clipped */
+  .logcat-filters-table tbody > tr > td > input.form-control.input-sm,
+  .logcat-filters-table tbody > tr > td > select.form-control.input-sm {
+    height: 34px;
+    min-height: 34px;
+    padding: 6px 12px;
+    line-height: 1.42857143;
+    box-sizing: border-box;
+  }
+
 }

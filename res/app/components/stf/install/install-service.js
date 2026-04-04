@@ -104,7 +104,11 @@ module.exports = function InstallService(
       })
       .then(function(res) {
         installation.update(100 / 2, 'processing')
-        installation.href = res.data.resources.file.href
+        var fileRes = StorageService.getFileResourceFromResponse(res)
+        if (!fileRes || !fileRes.href) {
+          throw new Error('Invalid upload response (missing file href)')
+        }
+        installation.href = fileRes.href
         if(isIOSPlatform) {
           installation.manifest = {'application': {'activities': {}}}
           return control.install({

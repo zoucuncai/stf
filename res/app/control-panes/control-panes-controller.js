@@ -56,7 +56,7 @@ module.exports =
         templateUrl: 'control-panes/logs/logs.pug',
         filters: ['native', 'web']
       }
-    ].concat(angular.copy(sharedTabs))
+    ]
 
     $scope.device = null
     $scope.control = null

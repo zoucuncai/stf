@@ -1,0 +1,57 @@
+.bulk-action-panel
+  .heading
+    i.fa.fa-random
+    span(translate) 批量Monkey测试
+  .widget-content.padded
+    .form-inline.m-b-sm
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='all')
+        | 全部可用设备
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='selected')
+        | 勾选设备
+    device-list-bulk-device-table
+
+    .form-inline.m-t-sm
+      .form-group
+        input.form-control.input-sm.bulk-monkey-package-input(type='text' ng-model='monkeyPackage' placeholder='包名，例如 com.example.app')
+      .form-group
+        input.form-control.input-sm(type='number' min='1' ng-model='monkeyEventCount' placeholder='事件数')
+      .form-group
+        input.form-control.input-sm(type='number' min='0' ng-model='monkeyThrottleMs' placeholder='间隔(ms)')
+      .form-group
+        input.form-control.input-sm(type='text' ng-model='monkeySeed' placeholder='seed(可选)')
+      button.btn.btn-sm.btn-primary(ng-click='startMonkeyRun()' ng-disabled='monkeyRunning || !monkeyPackage')
+        span(translate) 开始
+      button.btn.btn-sm.btn-warning.m-l-xs(ng-click='stopMonkeyRun()' ng-disabled='!monkeyRunning')
+        span(translate) 结束
+
+    .m-t-xs.text-danger(ng-if='monkeyCompleteError') {{monkeyCompleteError}}
+
+    .m-t-sm(ng-if='monkeyRuns.length')
+      table.table.table-condensed
+        thead
+          tr
+            th Run ID
+            th 包名
+            th 参数
+            th 状态
+            th 成功
+            th 失败
+            th 成功率
+            th 开始时间
+            th 结束时间
+            th 报告
+        tbody
+          tr(ng-repeat='run in monkeyRuns track by run.id')
+            td {{run.id}}
+            td {{run.packageName}}
+            td {{run.argsText}}
+            td {{run.status}}
+            td {{run.successDevices || 0}}
+            td {{run.failDevices || 0}}
+            td {{run.passRate || 0}}%
+            td {{run.startedAt || run.createdAt}}
+            td {{run.endedAt || '-'}}
+            td
+              a(href='' ng-click='downloadMonkeyCsv(run); $event.preventDefault()') 下载CSV（含设备明细）

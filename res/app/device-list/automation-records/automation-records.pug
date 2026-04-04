@@ -1,0 +1,58 @@
+.widget-container.fluid-height.automation-records-panel
+  .heading
+    i.fa.fa-flask
+    span 自动化测试记录
+  .widget-content.padded
+    .form-inline.m-b-sm.pull-right
+      input.form-control.input-sm(
+        type='search'
+        placeholder='搜索：运行ID、包名、录制名、执行人…'
+        ng-model='recordQuery'
+        ng-model-options='{debounce: 200}'
+        style='min-width:280px;'
+      )
+    .clearfix
+
+    .table-responsive(ng-if='mergedRecords.length')
+      table.table.table-bordered.table-condensed.automation-records-table
+        thead
+          tr
+            th(style='width:72px') 类型
+            th 运行ID
+            th 名称
+            th 参数
+            th 创建人
+            th 状态
+            th 进度
+            th 成功数
+            th 失败数
+            th 成功率
+            th 开始时间
+            th 结束时间
+            th(style='width:88px') 操作
+        tbody
+          tr(ng-repeat='row in displayRows track by row._track')
+            td.selectable {{row.kindLabel}}
+            td.selectable {{row.id}}
+            td.selectable {{row.title}}
+            td.selectable {{row.params}}
+            td.selectable {{row.owner}}
+            td {{row.statusText}}
+            td {{row.progressText}}
+            td {{row.successCount}}
+            td {{row.failCount}}
+            td {{(row.passRate != null ? (row.passRate.toFixed ? row.passRate.toFixed(2) : row.passRate) : 0)}}%
+            td.selectable {{row.started}}
+            td.selectable {{row.ended}}
+            td
+              a.btn.btn-xs.btn-primary(ng-href="{{row.downloadUrl}}" target='_blank' rel='noopener') 下载
+
+      .automation-records-pagination.text-center.m-t-sm(ng-if='mergedRecords.length && totalFiltered > 0 && !recordsLoading')
+        span.text-muted.m-r-sm 共 {{totalFiltered}} 条，每页 {{recordsPageSize}} 条
+        button.btn.btn-xs.btn-default(ng-disabled='recordsPage <= 1' ng-click='prevRecordsPage()') 上一页
+        span.m-l-sm.m-r-sm 第 {{recordsPage}} / {{totalPages}} 页
+        button.btn.btn-xs.btn-default(ng-disabled='recordsPage >= totalPages' ng-click='nextRecordsPage()') 下一页
+
+    p.text-muted(ng-if='mergedRecords.length && !totalFiltered && !recordsLoading') 无匹配记录
+    p.text-muted(ng-if='!mergedRecords.length && !recordsLoading') 暂无记录
+    p.text-muted(ng-if='recordsLoading') 加载中…

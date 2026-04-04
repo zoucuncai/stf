@@ -1,0 +1,45 @@
+.bulk-action-panel
+  .heading
+    i.fa.fa-terminal
+    span(translate) 批量执行Shell
+  .widget-content.padded
+    .form-inline.m-b-sm
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='all')
+        | 全部可用设备
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='selected')
+        | 勾选设备
+    device-list-bulk-device-table
+
+    .form-group
+      textarea.form-control.input-sm.bulk-shell-command(
+        rows='3'
+        placeholder='输入Shell命令'
+        ng-model='bulkShellCommand')
+    .form-inline
+      .form-group
+        input.form-control.input-sm(
+          type='number'
+          min='5000'
+          step='1000'
+          ng-model='bulkShellTimeoutMs'
+          style='width: 140px;')
+      .form-group
+        span.text-muted 超时(ms)
+      button.btn.btn-sm.btn-primary(ng-click='startBulkShell()' ng-disabled='bulkShellRunning || !bulkShellCommand')
+        span(translate) 开始执行
+      button.btn.btn-sm.btn-danger-outline(ng-click='stopBulkShell()' ng-disabled='!bulkShellRunning')
+        span(translate) 停止命令并释放设备（尽快）
+      button.btn.btn-sm.btn-default(ng-click='clearBulkShellOutput()')
+        span(translate) 清空输出
+    .m-t-xs.text-muted
+    .m-t-xs.text-muted(ng-if='bulkShellRunning && bulkShellAbort') 已请求停止：当前设备会尽快结束输出并释放；后续设备将不再执行。
+    .m-t-xs(ng-if='bulkShellProgress.total>0') 执行进度：{{bulkShellProgress.done}} / {{bulkShellProgress.total}}
+    pre.bulk-shell-output(ng-if='bulkShellRunning && bulkShellLiveText') {{bulkShellLiveText}}
+    .m-t-sm(ng-if='bulkShellResults.length')
+      .selectable(ng-repeat='item in bulkShellResults track by $index')
+        span.label(ng-class="item.ok ? 'label-success' : 'label-danger'") {{item.serial}}
+        span(ng-if='item.ok')  成功
+        span(ng-if='!item.ok')  失败: {{item.error}}
+        pre.bulk-shell-output(ng-if='item.commandOutput') {{item.commandOutput}}

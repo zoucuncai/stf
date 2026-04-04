@@ -344,16 +344,79 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
       }
     })
   , owner: LinkCell({
-      title: gettext('User')
+      title: gettext('使用人')
     , target: '_blank'
     , value: function(device) {
-        return device.owner ? device.owner.name : ''
+        return device.owner ? (device.owner.name || device.owner.email || '') : ''
       }
     , link: function(device) {
         return device.owner ? device.enhancedUserProfileUrl : ''
       }
     })
+  , responsible: (function() {
+      const title = gettext('归属人')
+
+      // Admin-only: allow editing the "responsible" user by email.
+      if (AppState.user && AppState.user.privilege === 'admin') {
+        return DeviceResponsibleCell({
+          title: title
+        , value: function(device) {
+            return device.responsible ?
+              (device.responsible.email || device.responsible.name || '') :
+              ''
+          }
+        })
+      }
+
+      return LinkCell({
+        title: title
+      , target: '_blank'
+      , value: function(device) {
+          return device.responsible ?
+            (device.responsible.name || device.responsible.email || '') :
+            ''
+        }
+      , link: function(device) {
+          return device.responsible ? device.enhancedResponsibleProfileUrl : ''
+        }
+      })
+    })()
   }
+}
+
+function DeviceResponsibleCell(options) {
+  return _.defaults(options, {
+    title: options.title
+  , defaultOrder: 'asc'
+  , build: function() {
+      var td = document.createElement('td')
+      var span = document.createElement('span')
+      var i = document.createElement('i')
+
+      td.className = 'device-responsible'
+      span.className = 'xeditable-wrapper'
+      span.appendChild(document.createTextNode(''))
+
+      i.className = 'device-responsible-edit fa fa-pencil pointer'
+
+      td.appendChild(span)
+      td.appendChild(i)
+
+      return td
+    }
+  , update: function(td, item) {
+      var span = td.firstChild
+      var t = span.firstChild
+      t.nodeValue = options.value(item)
+      return td
+    }
+  , compare: function(a, b) {
+      return compareIgnoreCase(options.value(a), options.value(b))
+    }
+  , filter: function(item, filter) {
+      return filterIgnoreCase(options.value(item), filter.query)
+    }
+  })
 }
 
 function zeroPadTwoDigit(digit) {

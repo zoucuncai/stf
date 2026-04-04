@@ -1,6 +1,5 @@
 module.exports = function ControlServiceFactory(
-  $upload
-, $http
+  $http
 , socket
 , TransactionService
 , $rootScope
@@ -133,10 +132,16 @@ module.exports = function ControlServiceFactory(
       })
     }
 
-    this.shell = function(command) {
+    this.shell = function(command, timeout) {
       return sendTwoWay('shell.command', {
         command: command
-      , timeout: 10000
+      , timeout: timeout || 10000
+      })
+    }
+
+    this.shellKeepalive = function(timeout) {
+      return sendOneWay('shell.keepalive', {
+        timeout: timeout
       })
     }
 
@@ -235,6 +240,14 @@ module.exports = function ControlServiceFactory(
     this.fslist = function(dir) {
       return sendTwoWay('fs.list', {
         dir: dir
+      })
+    }
+
+    this.fspush = function(href, target, filename) {
+      return sendTwoWay('fs.push', {
+        href: href
+      , target: target
+      , filename: filename || ''
       })
     }
 

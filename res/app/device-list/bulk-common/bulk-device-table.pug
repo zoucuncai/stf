@@ -1,0 +1,15 @@
+.table-responsive.bulk-device-table-wrap(ng-if='batchSelection.mode==="selected"')
+  table.table.table-bordered.table-condensed.bulk-device-table
+    thead
+      tr
+        th(style='width:44px') 选择
+        th 设备名称
+        th 型号
+        th 状态
+    tbody
+      tr(ng-repeat='d in getBatchDevicesForUi() track by d.serial')
+        td
+          input(type='checkbox' ng-model='batchSelection.selected[d.serial]' ng-disabled='!isBatchSelectableDevice(d)')
+        td.selectable {{batchDeviceNameText(d)}}
+        td.selectable {{batchDeviceModelText(d)}}
+        td.selectable {{batchDeviceStatusText(d)}}

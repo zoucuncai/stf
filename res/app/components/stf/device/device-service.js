@@ -273,5 +273,12 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
     })
   }
 
+  deviceService.updateResponsible = function(serial, responsibleEmail) {
+    socket.emit('device.responsible', {
+      serial: serial,
+      responsibleEmail: responsibleEmail
+    })
+  }
+
   return deviceService
 }

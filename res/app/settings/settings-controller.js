@@ -36,7 +36,7 @@ module.exports = function SettingsCtrl($scope, gettext, AppState) {
     )
     $scope.settingTabs.push(
       {
-        title: gettext('Users'),
+        title: gettext('用户'),
         icon: 'fa-user fa-fw',
         templateUrl: 'settings/users/users.pug'
       }

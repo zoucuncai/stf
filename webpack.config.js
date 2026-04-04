@@ -2,6 +2,7 @@
 // Copyright © 2022-2024 contains code contributed by Orange SA, authors: Denis Barbaron - Licensed under the Apache license 2.0
 //
 
+var path = require('path')
 var _ = require('lodash')
 var webpack = require('webpack')
 var ProgressPlugin = require('webpack/lib/ProgressPlugin')
@@ -41,6 +42,9 @@ module.exports = {
             , localforage: 'localforage/dist/localforage.js'
             , stats: 'stats.js/src/Stats.js'
             , 'underscore.string': 'underscore.string/index'
+            // bower_components/ng-file-upload is the legacy angular-file-upload (module angularFileUpload).
+            // App templates use ngf-* from npm ng-file-upload@12 (module ngFileUpload); force npm here.
+            , 'ng-file-upload': path.join(__dirname, 'node_modules', 'ng-file-upload', 'index.js')
         }
     }
     , module: {

@@ -1,0 +1,67 @@
+/* Horizontal spacing between controls in bulk operation toolbars */
+.bulk-action-panel .widget-content .form-inline {
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.bulk-action-panel .widget-content .form-inline > .form-group + .form-group,
+.bulk-action-panel .widget-content .form-inline > .btn + .btn,
+.bulk-action-panel .widget-content .form-inline > .form-group + .btn {
+  margin-left: 14px;
+}
+
+.bulk-action-panel .widget-content .form-inline > .btn {
+  margin-top: 2px;
+}
+
+.bulk-action-panel .widget-content .form-inline.m-b-sm {
+  margin-bottom: 10px;
+}
+
+.bulk-cache-df {
+  font-size: 11px;
+  max-height: 120px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  padding: 6px 8px;
+  margin-top: 6px;
+}
+
+/* Reliable file picker hit area (ngf-select) */
+.stf-bulk-file-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Shell / curl-wget command output in bulk push & bulk shell */
+.bulk-shell-output {
+  font-size: 11px;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  padding: 6px 8px;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.stf-bulk-file-btn input[type='file'] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 100%;
+  min-height: 100%;
+  font-size: 999px;
+  text-align: right;
+  opacity: 0;
+  outline: none;
+  cursor: pointer;
+  display: block;
+}

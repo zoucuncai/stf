@@ -13,8 +13,8 @@
         uib-tooltip='{{ "Upload From Link" | translate }}', ng-disabled='!remoteUrl')
           i.fa.fa-upload
 
-    .drop-area(ng-file-drop='installFile($files)', ng-file-drag-over-class='dragover').file-input.btn-file
-      input(type='file', ng-file-select='installFile($files)')
+    .drop-area(ngf-drop='installFile($files)', ngf-drag-over-class='dragover').file-input.btn-file
+      input(type='file' ngf-select='installFile($files)')
 
       i.fa.fa-2x.fa-download.drop-area-icon
       .drop-area-text(translate) Drop file to upload

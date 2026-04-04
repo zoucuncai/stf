@@ -1,0 +1,91 @@
+.bulk-action-panel
+  .heading
+    i.fa.fa-play
+    span(translate) 批量回放录制脚本
+  .widget-content.padded
+    .form-inline.m-b-sm
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='all')
+        | 全部可用设备
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='selected')
+        | 勾选设备
+    device-list-bulk-device-table
+
+    .bulk-replay-toolbar
+      .form-group
+        label 录制脚本
+        select.form-control.input-sm(ng-model='selectedRecordingId' ng-options='item.id as item.name for item in recordings')
+      .form-group
+        button.btn.btn-sm.btn-primary(ng-click='startReplay()')
+          span(translate) 开始回放
+
+    .heading.m-t-md
+      i.fa.fa-list
+      span 录制脚本列表
+    .widget-content.padded
+      .form-inline.m-b-sm
+        input.form-control.input-sm(
+          type='search'
+          placeholder='搜索：录制ID、录制名称、创建人…'
+          ng-model='recordQuery'
+          ng-model-options='{debounce: 200}'
+          ng-change='onRecordingQueryChange()'
+          style='min-width:320px;'
+        )
+      .text-muted(ng-if='!recordings.length') 暂无录制
+      table.table.table-condensed.table-bordered.m-t-sm(ng-if='recordingsPage.length')
+        thead
+          tr
+            th 录制ID
+            th 录制名称
+            th 创建人
+            th 创建时间
+            th 操作
+        tbody
+          tr(ng-repeat='item in recordingsPage track by item.id')
+            td.selectable {{item.id}}
+            td.selectable {{item.name}}
+            td.selectable {{item.createdByName || item.createdByEmail}}
+            td {{item.createdAt}}
+            td
+              a.btn.btn-xs.btn-primary(ng-href='/api/v1/automation/recordings/{{item.id}}/download' target='_blank' rel='noopener') 下载脚本
+              button.btn.btn-xs.btn-success.m-l-sm(ng-click='replayRecordingOnBatch(item)') 对所选设备回放
+
+      .text-center.m-t-sm(ng-if='recordingTotalPages > 1')
+        button.btn.btn-xs.btn-default(ng-disabled='recordingPage <= 1' ng-click='prevRecordingPage()')
+          span 上一页
+        span.m-l-sm.m-r-sm
+          | 第 {{recordingPage}} / {{recordingTotalPages}} 页
+        button.btn.btn-xs.btn-default(ng-disabled='recordingPage >= recordingTotalPages' ng-click='nextRecordingPage()')
+          span 下一页
+
+    table.table.table-condensed.table-bordered.m-t-sm(ng-if='replayRuns.length')
+      thead
+        tr
+          th 运行ID
+          th 录制名称
+          th 创建人
+          th 状态
+          th 进度
+          th 成功数
+          th 失败数
+          th 案例成功率
+          th 开始时间
+          th 结束时间
+          th 操作
+      tbody
+        tr(ng-repeat='run in replayRuns track by run.id')
+          td.selectable {{run.id}}
+          td.selectable {{run.recordingName}}
+          td.selectable {{run.createdByName || run.createdByEmail}}
+          td {{run.status === "finished" ? "已完成" : (run.status === "running" ? "执行中" : run.status)}}
+          td {{run.progressDone || 0}} / {{run.totalDevices || 0}}
+          td {{run.successDevices || 0}}
+          td {{run.failDevices || 0}}
+          td {{(run.caseSuccessRate != null ? (run.caseSuccessRate.toFixed ? run.caseSuccessRate.toFixed(2) : run.caseSuccessRate) : 0)}}%
+          td {{run.startedAt || run.createdAt}}
+          td {{run.endedAt || ''}}
+          td
+            button.btn.btn-xs.btn-primary(ng-click='downloadReplayCsv(run)') 下载CSV
+    .text-muted(ng-if='!replayRuns.length') 暂无记录

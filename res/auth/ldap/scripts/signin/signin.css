@@ -17,14 +17,7 @@ body {
     margin: 40px auto;
 }
 
-.login2 .login-wrapper .input-group-addon {
-    padding: 8px 0;
-    background: #f4f4f4;
-    min-width: 48px;
-    text-align: center;
-}
-
-.login2 .login-wrapper .input-group-addon i.falock {
+.login2 .login-wrapper .input-group-addon i.fa-lock {
     font-size: 18px;
 }
 
@@ -32,6 +25,60 @@ body {
     height: 48px;
     font-size: 15px;
     box-shadow: none;
+}
+
+.login2 .login-wrapper .form-group .input-group {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.login2 .login-wrapper .input-group-addon {
+    padding: 8px 0;
+    background: #f4f4f4;
+    text-align: center;
+    float: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 48px;
+    box-sizing: border-box;
+    align-self: stretch;
+}
+
+.login2 .login-wrapper .input-group > .form-control {
+    float: none !important;
+    flex: 1 1 auto;
+    width: 1% !important;
+    min-width: 0;
+    height: auto !important;
+    min-height: 48px;
+    align-self: stretch;
+    box-sizing: border-box;
+}
+
+.login2 .login-wrapper .input-group-btn {
+    float: none !important;
+    display: flex;
+    align-items: stretch;
+    width: auto;
+    position: relative;
+    vertical-align: top;
+}
+
+.login2 .login-wrapper .input-group-btn .btn {
+    min-width: 48px;
+    min-height: 48px;
+    height: 100%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    box-sizing: border-box;
 }
 
 .login2 .login-wrapper .checkbox {

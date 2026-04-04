@@ -6,8 +6,10 @@
 .idea/
 node_modules/
 npm-debug.log
-res/bower_components/
-res/build/
+# Keep local frontend dependencies/build artifacts for offline builds.
+# If these folders exist locally, Docker can reuse them when GitHub is blocked.
+# res/bower_components/
+# res/build/
 rethinkdb_data/
 temp/
 tmp/

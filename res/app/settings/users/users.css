@@ -14,6 +14,21 @@
   margin: 0px 10px 15px 15px;
 }
 
+.stf-users .user-creation-password .input-group {
+  display: inline-table;
+  vertical-align: middle;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.stf-users .user-creation-password .input-group .form-control {
+  float: none;
+}
+
+.stf-users .user-creation-password .input-group-btn .btn {
+  padding: 5px 10px;
+}
+
 .stf-users .user-save, .user-default-quotas-save, .form-group.user-quotas-save {
   margin: 5px 10px 15px 15px;
 }

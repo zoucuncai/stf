@@ -1,0 +1,25 @@
+.bulk-action-panel
+  .heading
+    i.fa.fa-trash
+    span(translate) 批量卸载
+  .widget-content.padded
+    .form-inline.m-b-sm
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='all')
+        | 全部可用设备
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='selected')
+        | 勾选设备
+    device-list-bulk-device-table
+
+    .form-inline
+      .form-group
+        input.form-control(type='text' placeholder='包名，例如 com.demo.app' ng-model='bulkUninstallPackage' style='min-width: 420px;')
+      button.btn.btn-sm.btn-primary(ng-click='runBulkUninstall()' ng-disabled='bulkUninstallRunning || !bulkUninstallPackage')
+        span(translate) 开始
+    .m-t-xs(ng-if='bulkUninstallProgress.total>0') 执行进度：{{bulkUninstallProgress.done}} / {{bulkUninstallProgress.total}}
+    .m-t-sm(ng-if='bulkUninstallResults.length')
+      .selectable(ng-repeat='item in bulkUninstallResults track by $index')
+        span.label(ng-class="item.ok ? 'label-success' : 'label-danger'") {{item.serial}}
+        span(ng-if='item.ok')  成功
+        span(ng-if='!item.ok')  失败: {{item.error}}

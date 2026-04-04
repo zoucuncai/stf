@@ -54,40 +54,55 @@ module.exports = function MenuCtrl(
     }, 100)
   }
 
-  $scope.alertMessage = {
+  var defaultAlertMessage = {
     activation: 'False'
   , data: ''
   , level: ''
   }
 
+  $scope.alertMessage = angular.extend({}, defaultAlertMessage)
+
   if (AppState.user.privilege === 'admin') {
-    $scope.alertMessage = SettingsService.get('alertMessage')
+    var fromSettings = SettingsService.get('alertMessage')
+    if (fromSettings && typeof fromSettings === 'object') {
+      angular.extend($scope.alertMessage, fromSettings)
+    }
   }
   else {
     UsersService.getUsersAlertMessage().then(function(response) {
-      $scope.alertMessage = response.data.alertMessage
+      var am = response.data && response.data.alertMessage
+      if (am && typeof am === 'object') {
+        angular.extend($scope.alertMessage, am)
+      }
     })
   }
 
   $scope.isAlertMessageActive = function() {
-    return $scope.alertMessage.activation === 'True'
+    var m = $scope.alertMessage
+    return !!(m && m.activation === 'True')
   }
 
   $scope.isInformationAlert = function() {
-    return $scope.alertMessage.level === 'Information'
+    var m = $scope.alertMessage
+    return !!(m && m.level === 'Information')
   }
 
   $scope.isWarningAlert = function() {
-    return $scope.alertMessage.level === 'Warning'
+    var m = $scope.alertMessage
+    return !!(m && m.level === 'Warning')
   }
 
   $scope.isCriticalAlert = function() {
-    return $scope.alertMessage.level === 'Critical'
+    var m = $scope.alertMessage
+    return !!(m && m.level === 'Critical')
   }
 
   $scope.$on('user.menu.users.updated', function(event, message) {
     if (message.user.privilege === 'admin') {
-      $scope.alertMessage = message.user.settings.alertMessage
+      var am = message.user && message.user.settings && message.user.settings.alertMessage
+      if (am && typeof am === 'object') {
+        angular.extend($scope.alertMessage, am)
+      }
     }
   })
 }

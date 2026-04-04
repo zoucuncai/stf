@@ -68,6 +68,11 @@ module.exports = function EnhanceDeviceServiceFactory($filter, AppState) {
       device.enhancedUserName = device.owner.name || 'No name'
     }
 
+    if (device.responsible) {
+      device.enhancedResponsibleProfileUrl = enhanceUserProfileUrl(device.responsible.email)
+      device.enhancedResponsibleName = device.responsible.name || 'No name'
+    }
+
     device.enhancedGroupOwnerProfileUrl = enhanceUserProfileUrl(device.group.owner.email)
   }
 

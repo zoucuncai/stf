@@ -1,0 +1,32 @@
+.bulk-action-panel
+  .heading
+    i.fa.fa-download
+    span(translate) 批量安装
+  .widget-content.padded
+    .form-inline.m-b-sm
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='all')
+        | 全部可用设备
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='selected')
+        | 勾选设备
+    device-list-bulk-device-table
+
+    .form-inline
+      .form-group
+        span.stf-bulk-file-btn.btn.btn-sm.btn-default
+          input(type='file' accept='.apk,.aab' ngf-select='onBulkInstallFiles($files)' ngf-multiple='false')
+          | 选择APP文件
+      .form-group
+        span.text-muted(ng-if='bulkInstallFiles.length') 已选择 {{bulkInstallFiles[0].name}}，点击「开始」上传并安装
+        span.text-muted(ng-if='!bulkInstallFiles.length') 请先选择 APK 文件，再点「开始」上传并安装
+      button.btn.btn-sm.btn-primary(ng-click='runBulkInstall()' ng-disabled='bulkInstallRunning || !bulkInstallFiles.length')
+        span(translate) 开始
+    .m-t-xs(ng-if='bulkInstallUploadProgress>0') 上传进度：{{bulkInstallUploadProgress}}%
+    .m-t-xs(ng-if='bulkInstallInstallPct != null') 安装进度：{{bulkInstallInstallPct}}%（当前设备）
+    .m-t-xs(ng-if='bulkInstallProgress.total>0') 设备执行：{{bulkInstallProgress.done}} / {{bulkInstallProgress.total}}
+    .m-t-sm(ng-if='bulkInstallResults.length')
+      .selectable(ng-repeat='item in bulkInstallResults track by $index')
+        span.label(ng-class="item.ok ? 'label-success' : 'label-danger'") {{item.serial}}
+        span(ng-if='item.ok')  成功
+        span(ng-if='!item.ok')  失败: {{item.error}}

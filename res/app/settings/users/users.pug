@@ -5,7 +5,7 @@
 .widget-container.fluid-height.stf-users(ng-controller='UsersCtrl')
   .heading
     i.fa.fa-user
-    span(translate) User list 
+    span(translate) 用户列表
 
     button.btn.btn-primary-outline.pull-right.btn-sm(
       ng-click='showCreateUser = !showCreateUser; initTemporaryUser()'
@@ -25,29 +25,42 @@
           .user-line
             .heading
               i.fa.fa-user
-              span(translate) Create new user 
+              span(translate) 创建新用户
 
             form.form-inline(name='userForm')
               .form-group.user-creation
-                label.user-list-label(translate) Name
+                label.user-list-label(translate) 用户名
                 input.form-control.input-sm(
                   name='nameForm'
-                  uib-tooltip="{{'Regex syntax' | translate}}: {{::nameRegexStr}}"
-                  tooltip-placement='top'
-                  tooltip-popup-delay='500'
-                  tooltip-enable='userForm.nameForm.$invalid'
                   type='text' ng-model='tmpEnv.userName' ng-pattern="nameRegex" required)
 
               .form-group.user-creation
-                label.user-list-label(translate) Email
+                label.user-list-label(translate) 邮箱
                 input.form-control.input-sm(size='35' type='email' ng-model='tmpEnv.userEmail' required)
+
+              .form-group.user-creation.user-creation-password
+                label.user-list-label(translate) 密码
+                .input-group
+                  input.form-control.input-sm(
+                    name='passwordForm'
+                    size='20'
+                    ng-attr-type='{{showCreateUserPassword ? "text" : "password"}}'
+                    ng-model='tmpEnv.userPassword'
+                    required)
+                  span.input-group-btn
+                    button.btn.btn-default.btn-sm(
+                      type='button'
+                      uib-tooltip='{{showCreateUserPassword ? "隐藏密码" : "显示密码"}}'
+                      tooltip-placement='top'
+                      ng-click='showCreateUserPassword = !showCreateUserPassword')
+                      i.fa(ng-class='showCreateUserPassword ? "fa-eye-slash" : "fa-eye"')
 
               .form-group.user-save
                 button.btn.btn-sm.btn-primary(
                   type='button'
                   ng-click='createUser()'
                   ng-disabled='userForm.$invalid')
-                    span(translate) Save
+                    span(translate) 保存
 
         li.list-group-item
           .user-line.user-actions
