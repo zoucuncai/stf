@@ -45,7 +45,7 @@
             td.selectable {{row.started}}
             td.selectable {{row.ended}}
             td
-              a.btn.btn-xs.btn-primary(ng-href="{{row.downloadUrl}}" target='_blank' rel='noopener') 下载
+              a.btn.btn-xs.btn-primary(ng-href="{{row.downloadUrl}}" target='_blank' rel='noopener') 测试报告
 
       .automation-records-pagination.text-center.m-t-sm(ng-if='mergedRecords.length && totalFiltered > 0 && !recordsLoading')
         span.text-muted.m-r-sm 共 {{totalFiltered}} 条，每页 {{recordsPageSize}} 条

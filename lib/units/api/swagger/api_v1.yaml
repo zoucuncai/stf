@@ -992,6 +992,47 @@ paths:
                 type: object
       security:
         - accessTokenAuth: []
+  /automation/recordings/import:
+    x-swagger-router-controller: automation
+    post:
+      summary: Import automation recording from JSON
+      operationId: importRecording
+      tags:
+        - user
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              recording:
+                type: object
+                description: Full recording object from GET /recordings/{id} (optional wrapper)
+              stepsJson:
+                type: array
+                items:
+                  type: object
+              baselinesMeta:
+                type: array
+                items:
+                  type: object
+              pythonCode:
+                type: string
+              description:
+                type: string
+      responses:
+        "201":
+          description: Imported recording
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              recording:
+                type: object
+      security:
+        - accessTokenAuth: []
   /automation/recordings/{id}:
     x-swagger-router-controller: automation
     get:
@@ -1014,6 +1055,71 @@ paths:
                 type: boolean
               recording:
                 type: object
+      security:
+        - accessTokenAuth: []
+    put:
+      summary: Update automation recording (steps, baselines, name, etc.)
+      operationId: updateRecording
+      tags:
+        - user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              stepsJson:
+                type: array
+                items:
+                  type: object
+              baselinesMeta:
+                type: array
+                items:
+                  type: object
+              pythonCode:
+                type: string
+      responses:
+        "200":
+          description: Updated recording
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              recording:
+                type: object
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "409":
+          description: Name conflict
+      security:
+        - accessTokenAuth: []
+    delete:
+      summary: Delete automation recording by id
+      operationId: deleteRecording
+      tags:
+        - user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          description: Not found
       security:
         - accessTokenAuth: []
   /automation/recordings/{id}/download:
@@ -1153,6 +1259,12 @@ paths:
                       type: string
                     endedAt:
                       type: string
+                    executionLog:
+                      type: string
+                    reportArtifacts:
+                      type: array
+                      items:
+                        type: object
       responses:
         "200":
           description: Replay run completed
@@ -1165,11 +1277,11 @@ paths:
                 type: string
       security:
         - accessTokenAuth: []
-  /automation/replay/runs/{runId}/csv:
+  /automation/replay/runs/{runId}/test-report:
     x-swagger-router-controller: automation
     get:
-      summary: Download replay CSV
-      operationId: downloadReplayCsv
+      summary: Download replay HTML test report
+      operationId: downloadReplayTestReport
       tags:
         - user
       parameters:
@@ -1179,7 +1291,7 @@ paths:
           type: string
       responses:
         "200":
-          description: CSV
+          description: HTML report
       security:
         - accessTokenAuth: []
   /automation/monkey/runs:
@@ -1289,11 +1401,11 @@ paths:
                   type: object
       security:
         - accessTokenAuth: []
-  /automation/monkey/runs/{runId}/csv:
+  /automation/monkey/runs/{runId}/test-report:
     x-swagger-router-controller: automation
     get:
-      summary: Download monkey CSV
-      operationId: downloadMonkeyCsv
+      summary: Download monkey HTML test report
+      operationId: downloadMonkeyTestReport
       tags:
         - user
       parameters:
@@ -1303,7 +1415,7 @@ paths:
           type: string
       responses:
         "200":
-          description: CSV
+          description: HTML report
       security:
         - accessTokenAuth: []
   /automation/monkey/runs/{runId}/complete:

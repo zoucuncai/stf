@@ -10,8 +10,7 @@
   margin-bottom: 10px;
 }
 
-.automation-recorder-panel .automation-toolbar .automation-field label,
-.automation-recorder-panel .assertion-toolbar .automation-field label {
+.automation-recorder-panel .automation-toolbar .automation-field label {
   display: block;
   font-weight: normal;
   margin-bottom: 4px;
@@ -30,39 +29,6 @@
   gap: 10px;
 }
 
-.automation-recorder-panel .assertion-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px 18px;
-  margin-bottom: 10px;
-}
-
-.automation-recorder-panel .assertion-toolbar .form-control.input-sm {
-  min-width: 140px;
-}
-
-.automation-recorder-panel .assertion-toolbar input[type='text'].form-control.input-sm {
-  min-width: 260px;
-}
-
-.automation-recorder-panel .wait-step-input.form-control.input-sm {
-  min-width: 110px;
-  max-width: 110px;
-}
-
-.automation-recorder-panel .wait-step-input-group {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-end;
-  gap: 10px;
-}
-
-.automation-recorder-panel .wait-step-input-group .btn {
-  margin-left: 0;
-}
-
-.automation-recorder-panel .assertion-toolbar .btn,
 .automation-recorder-panel .automation-actions .btn {
   margin-left: 0;
 }
@@ -75,4 +41,77 @@
 .automation-recorder-panel .automation-detail-replay-table tbody > tr > td {
   vertical-align: middle;
   font-size: 12px;
+}
+
+.automation-recorder-panel .automation-steps-scroll {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+}
+
+.automation-recorder-panel .automation-steps-table {
+  margin-bottom: 0;
+}
+
+.automation-recorder-panel .automation-step-drag-col {
+  width: 28px;
+  text-align: center;
+  vertical-align: middle !important;
+}
+
+.automation-recorder-panel .automation-step-actions-col {
+  min-width: 280px;
+}
+
+.automation-recorder-panel .btn-automation-visual {
+  color: #fff;
+  background-color: #6f42c1;
+  border-color: #5a32a3;
+}
+
+.automation-recorder-panel .btn-automation-visual:hover,
+.automation-recorder-panel .btn-automation-visual:focus {
+  color: #fff;
+  background-color: #5a32a3;
+  border-color: #4c2a8c;
+}
+
+.automation-recorder-panel .btn-automation-visual[disabled] {
+  opacity: 0.55;
+}
+
+.automation-recorder-panel .automation-step-params-cell {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.automation-recorder-panel .automation-step-action-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.automation-recorder-panel .automation-step-drag-handle {
+  cursor: grab;
+  display: inline-block;
+  padding: 4px 2px;
+  user-select: none;
+}
+
+.automation-recorder-panel .automation-step-drag-handle:active {
+  cursor: grabbing;
+}
+
+.automation-recorder-panel tr.automation-step-dragging {
+  opacity: 0.55;
+}
+
+.automation-recorder-panel tr.automation-step-drop-target {
+  outline: 2px dashed #5bc0de;
+  outline-offset: -2px;
 }

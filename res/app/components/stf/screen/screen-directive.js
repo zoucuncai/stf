@@ -518,6 +518,58 @@ module.exports = function DeviceScreenDirective(
         var cycle = 100
         var fakePinch = false
         var lastPossiblyBuggyMouseUpEvent = 0
+        // Automation recorder: tap vs swipe — tap only if movement stays within this radius (px in element space).
+        var RECORDER_SWIPE_THRESHOLD_PX = 22
+        var recorderGestureState = null
+
+        function flushRecorderGesture(finalPageX, finalPageY) {
+          if (!recorderGestureState) {
+            return
+          }
+          var st = recorderGestureState
+          recorderGestureState = null
+          calculateBounds()
+          var fx = finalPageX - screen.bounds.x
+          var fy = finalPageY - screen.bounds.y
+          var endScaled = scaler.coords(
+                screen.bounds.w
+              , screen.bounds.h
+              , fx
+              , fy
+              , screen.rotation
+              )
+          st.x2P = endScaled.xP
+          st.y2P = endScaled.yP
+          var dx = fx - st.sx
+          var dy = fy - st.sy
+          var dist = Math.sqrt(dx * dx + dy * dy)
+          var nowTs = Date.now()
+          try {
+            if (dist < RECORDER_SWIPE_THRESHOLD_PX) {
+              $rootScope.$broadcast('stf.recorder.tap', {
+                xP: st.x1P
+              , yP: st.y1P
+              , rotation: st.rotation
+              , timestamp: nowTs
+              })
+            }
+            else {
+              var durationMs = Math.max(50, Math.min(6000, nowTs - st.t0))
+              $rootScope.$broadcast('stf.recorder.swipe', {
+                x1P: st.x1P
+              , y1P: st.y1P
+              , x2P: st.x2P
+              , y2P: st.y2P
+              , rotation: st.rotation
+              , durationMs: durationMs
+              , timestamp: nowTs
+              })
+            }
+          }
+          catch (err) {
+            // ignore recorder broadcast errors
+          }
+        }
 
         function nextSeq() {
           return ++seq >= cycle ? (seq = 0) : seq
@@ -587,6 +639,9 @@ module.exports = function DeviceScreenDirective(
 
           e.preventDefault()
 
+          // Reset before handling Safari's out-of-order mouseup (see mouseUpListener below).
+          recorderGestureState = null
+
           fakePinch = e.altKey
 
           calculateBounds()
@@ -612,16 +667,20 @@ module.exports = function DeviceScreenDirective(
 
           control.touchCommit(nextSeq())
 
-          // Recorder hook: broadcast tap coordinates (percent, 0..1)
-          try {
-            $rootScope.$broadcast('stf.recorder.tap', {
-              xP: scaled.xP
-            , yP: scaled.yP
+          if (!e.altKey) {
+            recorderGestureState = {
+              sx: x
+            , sy: y
+            , x1P: scaled.xP
+            , y1P: scaled.yP
+            , x2P: scaled.xP
+            , y2P: scaled.yP
             , rotation: screen.rotation
-            , timestamp: Date.now()
-            })
+            , t0: Date.now()
+            }
           }
-          catch (e) {
+          else {
+            recorderGestureState = null
           }
 
           activateFinger(0, x, y, pressure)
@@ -638,8 +697,8 @@ module.exports = function DeviceScreenDirective(
           if (lastPossiblyBuggyMouseUpEvent &&
               lastPossiblyBuggyMouseUpEvent.timeStamp > e.timeStamp) {
             // We got mouseup before mousedown. See mouseUpBugWorkaroundListener
-            // for details.
-            mouseUpListener(lastPossiblyBuggyMouseUpEvent)
+            // for details. Do not emit recorder tap/swipe for this synthetic pairing.
+            mouseUpListener(lastPossiblyBuggyMouseUpEvent, {skipRecorderFlush: true})
           }
           else {
             lastPossiblyBuggyMouseUpEvent = null
@@ -688,6 +747,11 @@ module.exports = function DeviceScreenDirective(
 
           control.touchCommit(nextSeq())
 
+          if (recorderGestureState) {
+            recorderGestureState.x2P = scaled.xP
+            recorderGestureState.y2P = scaled.yP
+          }
+
           activateFinger(0, x, y, pressure)
 
           if (deleteGhostFinger) {
@@ -699,7 +763,7 @@ module.exports = function DeviceScreenDirective(
           }
         }
 
-        function mouseUpListener(event) {
+        function mouseUpListener(event, opts) {
           var e = event
           if (e.originalEvent) {
             e = e.originalEvent
@@ -710,6 +774,10 @@ module.exports = function DeviceScreenDirective(
             return
           }
           e.preventDefault()
+
+          if (!opts || !opts.skipRecorderFlush) {
+            flushRecorderGesture(e.pageX, e.pageY)
+          }
 
           control.touchUp(nextSeq(), 0)
 
@@ -807,6 +875,10 @@ module.exports = function DeviceScreenDirective(
 
           calculateBounds()
 
+          if (e.touches.length > 1) {
+            recorderGestureState = null
+          }
+
           if (e.touches.length === e.changedTouches.length) {
             startTouching()
           }
@@ -859,6 +931,30 @@ module.exports = function DeviceScreenDirective(
             activateFinger(slot, x, y, pressure)
           }
 
+          if (e.touches.length === 1 && e.changedTouches.length === 1) {
+            var only = e.changedTouches[0]
+            var ox = only.pageX - screen.bounds.x
+            var oy = only.pageY - screen.bounds.y
+            var scaledOnly = scaler.coords(
+                  screen.bounds.w
+                , screen.bounds.h
+                , ox
+                , oy
+                , screen.rotation
+                )
+            recorderGestureState = {
+              sx: ox
+            , sy: oy
+            , x1P: scaledOnly.xP
+            , y1P: scaledOnly.yP
+            , x2P: scaledOnly.xP
+            , y2P: scaledOnly.yP
+            , rotation: screen.rotation
+            , t0: Date.now()
+            , touchId: only.identifier
+            }
+          }
+
           element.bind('touchmove', touchMoveListener)
           $document.bind('touchend', touchEndListener)
           $document.bind('touchleave', touchEndListener)
@@ -890,6 +986,10 @@ module.exports = function DeviceScreenDirective(
 
             control.touchMove(nextSeq(), slot, scaled.xP, scaled.yP, pressure)
             activateFinger(slot, x, y, pressure)
+            if (recorderGestureState && touch.identifier === recorderGestureState.touchId) {
+              recorderGestureState.x2P = scaled.xP
+              recorderGestureState.y2P = scaled.yP
+            }
           }
 
           control.touchCommit(nextSeq())
@@ -921,6 +1021,16 @@ module.exports = function DeviceScreenDirective(
           if (foundAny) {
             control.touchCommit(nextSeq())
             if (!e.touches.length) {
+              if (recorderGestureState) {
+                var ri, rl, relTouch
+                for (ri = 0, rl = e.changedTouches.length; ri < rl; ++ri) {
+                  relTouch = e.changedTouches[ri]
+                  if (relTouch.identifier === recorderGestureState.touchId) {
+                    flushRecorderGesture(relTouch.pageX, relTouch.pageY)
+                    break
+                  }
+                }
+              }
               stopTouching()
             }
           }

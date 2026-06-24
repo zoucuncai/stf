@@ -26,10 +26,10 @@
         .input-group
           span.input-group-addon
             i.fa.fa-lock
-          input.form-control(ng-model='password', name='password', required, type='{{showPassword ? "text" : "password"}}', placeholder='Password',
-          autocorrect='off', autocapitalize='off', spellcheck='false', autocomplete='section-login current-password')
-          span.input-group-btn
-            button.btn.btn-default(type='button', ng-click='togglePasswordVisible()')
+          .stf-password-field
+            input.form-control(ng-model='password', name='password', required, type='{{showPassword ? "text" : "password"}}', placeholder='Password',
+            autocorrect='off', autocapitalize='off', spellcheck='false', autocomplete='section-login current-password')
+            button.stf-password-toggle(type='button', ng-click='togglePasswordVisible()', title='Show/hide password', tabindex='-1')
               i.fa(ng-class='showPassword ? "fa-eye-slash" : "fa-eye"')
         .alert.alert-warning(ng-show='signin.password.$dirty && signin.password.$invalid')
           span(translate) Please enter your password

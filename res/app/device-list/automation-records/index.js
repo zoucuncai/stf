@@ -25,6 +25,9 @@ module.exports = angular.module('device-list.automation-records', [])
       if (s === 'running') {
         return '执行中'
       }
+      if (s === 'failed') {
+        return '失败'
+      }
       return s || ''
     }
 
@@ -52,7 +55,7 @@ module.exports = angular.module('device-list.automation-records', [])
         , passRate: Number(run.passRate || 0)
         , started: run.startedAt || run.createdAt || ''
         , ended: run.endedAt || ''
-        , downloadUrl: '/api/v1/automation/monkey/runs/' + run.id + '/csv'
+        , downloadUrl: '/api/v1/automation/monkey/runs/' + run.id + '/test-report'
         })
       })
       ;(replayRuns || []).forEach(function(run) {
@@ -71,7 +74,7 @@ module.exports = angular.module('device-list.automation-records', [])
         , passRate: Number(run.passRate || 0)
         , started: run.startedAt || run.createdAt || ''
         , ended: run.endedAt || ''
-        , downloadUrl: '/api/v1/automation/replay/runs/' + run.id + '/csv'
+        , downloadUrl: '/api/v1/automation/replay/runs/' + run.id + '/test-report'
         })
       })
       rows.sort(function(a, b) {

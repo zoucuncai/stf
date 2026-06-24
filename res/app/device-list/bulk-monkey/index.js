@@ -197,8 +197,8 @@ module.exports = angular.module('device-list.bulk-monkey', [
       $scope.monkeyAbort = true
     }
 
-    $scope.downloadMonkeyCsv = function(run) {
-      window.open('/api/v1/automation/monkey/runs/' + run.id + '/csv')
+    $scope.downloadMonkeyReport = function(run) {
+      window.open('/api/v1/automation/monkey/runs/' + run.id + '/test-report')
     }
 
     $scope.$on('$destroy', function() {

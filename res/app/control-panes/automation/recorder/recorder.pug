@@ -16,60 +16,141 @@
 
     .m-t-sm
       .heading
-        i.fa.fa-check-square-o
-        span(translate) 断言配置（录制时保存）
+        i.fa.fa-list-ol
+        span 录制步骤
       .widget-content.padded
-        .assertion-toolbar
-          .automation-field
-            label 断言类型
-            select.form-control.input-sm(ng-model='assertionDraft.type' ng-disabled='recordingLocked')
-              option(value='visual') 视觉断言
-              option(value='text') 文本断言
-          .automation-field(ng-if='assertionDraft.type==="text"')
-            label 期望文本
-            input.form-control.input-sm(type='text' ng-model='assertionDraft.expectedText' placeholder='例如：登录成功' ng-disabled='recordingLocked')
-          .automation-field(ng-if='assertionDraft.type==="visual"')
-            label 阈值
-            input.form-control.input-sm(type='number' ng-model='assertionDraft.threshold' placeholder='0.95' ng-disabled='recordingLocked')
-          .automation-actions
-            button.btn.btn-sm.btn-default(ng-if='assertionDraft.type==="text"' ng-click='addTextAssertion()' ng-disabled='recordingLocked || !recordingActive')
-              span(translate) 添加文本断言
-            button.btn.btn-sm.btn-default(ng-if='assertionDraft.type==="visual"' ng-click='captureVisualBaseline()' ng-disabled='recordingLocked || !recordingActive || baselineBusy')
-              span(ng-if='!baselineBusy', translate) 拍摄当前作为视觉基线
-              span(ng-if='baselineBusy') 拍摄中…
+        p.text-muted.small.m-b-sm(ng-if='recordingSteps.length>0')
+          span(ng-non-bindable='') 文本类参数支持变量（回放时替换）：
+          code(ng-non-bindable='') {{random:6}}
+          span(ng-non-bindable='') 、
+          code(ng-non-bindable='') {{random:4:numeric}}
+          span(ng-non-bindable='') 、
+          code(ng-non-bindable='') {{random:8:alpha}}
+          span(ng-non-bindable='') 、
+          code(ng-non-bindable='') {{timestamp}}
+          span(ng-non-bindable='') 、
+          code(ng-non-bindable='') {{uuid}}
+          span(ng-non-bindable='') 、
+          code(ng-non-bindable='') {{isoTime}}
 
-        .m-t-sm
-          .automation-field
-            label 等待(秒)
-            .wait-step-input-group
-              input.form-control.input-sm.wait-step-input(type='number' ng-model='waitStepSeconds' min='0' step='0.1' placeholder='0' ng-disabled='recordingLocked')
-              button.btn.btn-sm.btn-default(ng-disabled='recordingLocked || !recordingActive || !waitStepSeconds || Number(waitStepSeconds) <= 0' ng-click='addWaitStep()')
-                span(translate) 添加等待
+        .automation-steps-scroll(ng-if='recordingSteps.length>0')
+          table.table.table-condensed.table-bordered.automation-steps-table
+            thead
+              tr
+                th.automation-step-drag-col
+                th 显示名
+                th 断言/步骤
+                th 参数
+                th.automation-step-actions-col 操作
+            tbody
+              tr.automation-step-row(
+                ng-repeat='s in recordingSteps track by s._id'
+                ng-class='{"automation-step-dragging": draggingStepIndex === $index && dragStepContext === "recording", "automation-step-drop-target": dropTargetStepIndex === $index && dragStepContext === "recording"}'
+                ng-on-dragover='onStepDragOverRow($event, $index, "recording")'
+                ng-on-dragleave='onStepDragLeaveRow($event, $index)'
+                ng-on-drop='onStepDrop($event, $index, "recording")'
+              )
+                td.automation-step-drag-col
+                  span.automation-step-drag-handle(
+                    ng-attr-draggable='{{canReorderStepAt($index, "recording") ? "true" : "false"}}'
+                    title='拖拽排序'
+                    ng-on-dragstart='onStepDragStart($event, $index, "recording")'
+                    ng-on-dragend='onStepDragEnd($event)'
+                  )
+                    i.fa.fa-bars.text-muted(ng-if='canReorderStepAt($index, "recording")')
+                td
+                  span.text-muted(ng-if='!stepDisplayLabel(s)') —
+                  span(ng-if='stepDisplayLabel(s)') {{stepDisplayLabel(s)}}
+                td
+                  span(ng-if='s.action==="wait"') 等待={{s.waitMs != null ? (s.waitMs/1000) : 0}}s
+                  span(ng-if='s.action!=="wait" && s.action!=="start" && s.action!=="stop"')
+                    span(ng-if='s.action==="tap"') tap{{tapOrdinalForStep(recordingSteps, $index)}}
+                    span(ng-if='s.action==="swipe"') swipe{{swipeOrdinalForStep(recordingSteps, $index)}}
+                    span(ng-if='s.action==="input_text"') 输入{{inputTextOrdinalForStep(recordingSteps, $index)}}
+                    span(ng-if='s.action!=="tap" && s.action!=="swipe" && s.action!=="input_text"') {{s.action}}
+                  span(ng-if='s.action==="start"') start
+                  span(ng-if='s.action==="stop"') stop
+                td.automation-step-params-cell
+                  span(ng-if='s.action==="tap"')
+                    | xP={{s.xP}}, yP={{s.yP}}
+                    span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                  span(ng-if='s.action==="swipe"')
+                    | ({{s.x1P}},{{s.y1P}})→({{s.x2P}},{{s.y2P}}) {{s.durationMs}}ms
+                    span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                  span(ng-if='s.action==="assert_visual_match"')
+                    | baseline={{s.baselineIndex}}, 阈值={{baselineThresholdDisplay(s)}}
+                    span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                  span(ng-if='s.action==="assert_text_contains"')
+                    | {{s.expectedText}}
+                    span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                  span(ng-if='s.action==="input_text"')
+                    | xP={{s.xP}}, yP={{s.yP}} · {{ inputTextStepPreview(s) }}
+                    span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                  span(ng-if='s.action==="start" || s.action==="stop"') —
+                td.automation-step-actions-cell
+                  .automation-step-action-btns(ng-if='canMutateStep(s)')
+                    button.btn.btn-xs.btn-info(type='button' ng-click='openStepEditor($index)' title='编辑本步') 编辑
+                    button.btn.btn-xs.btn-warning(type='button' ng-click='insertStepAfter($index, "wait")' title='在此步后插入等待') 等待
+                    button.btn.btn-xs.btn-success(type='button' ng-click='insertStepAfter($index, "tap")' title='在此步后插入点击') 插入
+                    button.btn.btn-xs.btn-default(type='button' ng-click='insertStepAfter($index, "swipe")' title='在此步后插入滑动(可编辑起止点)') 滑动
+                    button.btn.btn-xs.btn-primary(type='button' ng-click='insertStepAfter($index, "assert_text")' title='在此步后插入文本断言') 文本
+                    button.btn.btn-xs.btn-info(type='button' ng-click='insertInputTextAfter($index)' title='在此步后插入：先点坐标再输入文本（若上一步为点击则沿用坐标）') 输入文本
+                    button.btn.btn-xs.btn-automation-visual(
+                      type='button'
+                      ng-click='insertVisualAssertionAfter($index)'
+                      ng-disabled='baselineBusy'
+                      title='拍摄当前画面为基线并插入视觉断言（默认阈值 0.95，可在编辑中修改）'
+                    )
+                      span(ng-if='!baselineBusy') 视觉
+                      span(ng-if='baselineBusy') …
+                    button.btn.btn-xs.btn-danger(type='button' ng-click='deleteStepAt($index)' title='删除本步') 删
 
-        table.table.table-condensed.table-bordered(ng-if='recordingSteps.length>0')
-          thead
-            tr
-              th 断言/步骤
-              th 参数
-              th(style='width:120px') 操作
-          tbody
-            tr(ng-repeat='s in pagedRecordingSteps() track by s._id')
-              td
-                span(ng-if='s.action==="wait"') 等待={{s.waitMs != null ? (s.waitMs/1000) : 0}}s
-                span(ng-if='s.action!=="wait"') {{s.action === 'tap' ? ('tap' + tapOrdinalForStep(recordingSteps, ((recordingStepPage - 1) * recordingStepPageSize) + $index)) : s.action}}
-              td
-                span(ng-if='s.action==="assert_visual_match"') baseline={{s.baselineIndex}}
-                span(ng-if='s.action==="assert_text_contains"') expectedText={{s.expectedText}}
-              td
-                button.btn.btn-xs.btn-default(type='button' ng-click='editStepAt(((recordingStepPage - 1) * recordingStepPageSize) + $index)' ng-disabled='!canMutateStep(s)') 修改
-                button.btn.btn-xs.btn-danger-outline.m-l-xs(type='button' ng-click='deleteStepAt(((recordingStepPage - 1) * recordingStepPageSize) + $index)' ng-disabled='!canMutateStep(s)') 删除
-        .text-center.m-t-sm(ng-if='recordingStepTotalPages() > 1')
-          button.btn.btn-xs.btn-default(ng-disabled='recordingStepPage <= 1' ng-click='prevRecordingStepPage()')
-            span 上一页
-          span.m-l-sm.m-r-sm
-            | 第 {{recordingStepPage}} / {{recordingStepTotalPages()}} 页
-          button.btn.btn-xs.btn-default(ng-disabled='recordingStepPage >= recordingStepTotalPages()' ng-click='nextRecordingStepPage()')
-            span 下一页
+        .panel.panel-default.m-t-md(ng-if="stepEdit && stepEdit.target !== 'library'")
+          .panel-heading
+            span 编辑步骤
+            span.text-muted.small.m-l-sm ({{ stepEdit.actionLabel }})
+          .panel-body
+            .form-group
+              label 显示名称（可选）
+              input.form-control.input-sm(type='text' ng-model='stepEdit.draft.stepLabel' placeholder='例如：打开菜单')
+            .form-group(ng-if='stepEdit.kind && stepEdit.kind !== "wait"')
+              label 延时（本步执行前，秒）
+              input.form-control.input-sm(type='number' step='0.05' min='0' max='120' ng-model='stepEdit.draft.delaySeconds')
+              span.text-muted.small 默认 0.5；0 表示不等待
+            .form-group(ng-if='stepEdit.kind === "tap"')
+              label xP (0~1)
+              input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.xP')
+              label.m-t-sm yP (0~1)
+              input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.yP')
+            .form-group(ng-if='stepEdit.kind === "swipe"')
+              label 起点 x1P / y1P
+              input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.x1P')
+              input.form-control.input-sm.m-t-sm(type='number' step='0.0001' ng-model='stepEdit.draft.y1P')
+              label.m-t-sm 终点 x2P / y2P
+              input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.x2P')
+              input.form-control.input-sm.m-t-sm(type='number' step='0.0001' ng-model='stepEdit.draft.y2P')
+              label.m-t-sm 时长 (ms，50~8000)
+              input.form-control.input-sm(type='number' step='10' min='50' max='8000' ng-model='stepEdit.draft.durationMs')
+            .form-group(ng-if='stepEdit.kind === "wait"')
+              label 等待秒数
+              input.form-control.input-sm(type='number' step='0.1' min='0' ng-model='stepEdit.draft.waitSeconds')
+            .form-group(ng-if='stepEdit.kind === "assert_text"')
+              label 期望包含文本（支持变量）
+              input.form-control.input-sm(type='text' ng-model='stepEdit.draft.expectedText' placeholder='如 登录成功 或 user_ 加变量占位符')
+            .form-group(ng-if='stepEdit.kind === "input_text"')
+              label 点击坐标 xP / yP（先点输入框聚焦）
+              input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.xP')
+              input.form-control.input-sm.m-t-sm(type='number' step='0.0001' ng-model='stepEdit.draft.yP')
+              label.m-t-sm 输入内容（支持变量，见表头说明）
+              input.form-control.input-sm(type='text' ng-model='stepEdit.draft.inputText' placeholder='要输入到设备的文本')
+            .form-group(ng-if='stepEdit.kind === "assert_visual"')
+              label 阈值（0~1，越高越严格）
+              input.form-control.input-sm(type='number' step='0.01' min='0' max='1' ng-model='stepEdit.draft.threshold')
+              label.m-t-sm 基线索引（一般无需修改）
+              input.form-control.input-sm(type='number' step='1' min='0' ng-model='stepEdit.draft.baselineIndex')
+          .panel-footer
+            button.btn.btn-sm.btn-primary(type='button' ng-click='saveStepEditor()') 保存
+            button.btn.btn-sm.btn-default.m-l-sm(type='button' ng-click='cancelStepEditor()') 取消
 
     .m-t-sm
       .heading
@@ -86,8 +167,160 @@
           .automation-actions
             button.btn.btn-sm.btn-default(type='button' ng-click='downloadSelectedRecording(selectedRecordingId)' ng-disabled='!selectedRecordingId || replayState.launching')
               span(translate) 下载脚本
+            button.btn.btn-sm.btn-default(type='button' ng-click='openSelectedRecordingForEdit(selectedRecordingId)' ng-disabled='!selectedRecordingId || replayState.launching || recordingActive')
+              span(translate) 编辑
             button.btn.btn-sm.btn-success(type='button' ng-click='startReplayBySelection(selectedRecordingId)' ng-disabled='replayState.running || replayState.launching || !selectedRecordingId')
               span(translate) 回放到当前设备
+
+        .automation-library-edit.m-t-md(ng-if='libraryEdit')
+          .heading
+            i.fa.fa-pencil-square-o
+            span 编辑已选脚本
+          .widget-content.padded
+            .automation-toolbar
+              .automation-field
+                label 录制名称
+                input.form-control.input-sm(type='text' ng-model='libraryEdit.name' placeholder='名称')
+              .automation-field.m-t-sm
+                label 说明（可选）
+                input.form-control.input-sm(type='text' ng-model='libraryEdit.description' placeholder='说明')
+            .text-danger.small.m-t-sm(ng-if='libraryEdit.saveError') {{libraryEdit.saveError}}
+            .text-danger.small.m-t-sm(ng-if='libraryEdit.captureError') {{libraryEdit.captureError}}
+            p.text-muted.small.m-b-sm(ng-if='libraryEdit.steps.length>0')
+              span(ng-non-bindable='') 文本类参数支持变量（回放时替换）：
+              code(ng-non-bindable='') {{random:6}}
+              span(ng-non-bindable='') 、
+              code(ng-non-bindable='') {{random:4:numeric}}
+              span(ng-non-bindable='') 、
+              code(ng-non-bindable='') {{random:8:alpha}}
+              span(ng-non-bindable='') 、
+              code(ng-non-bindable='') {{timestamp}}
+              span(ng-non-bindable='') 、
+              code(ng-non-bindable='') {{uuid}}
+              span(ng-non-bindable='') 、
+              code(ng-non-bindable='') {{isoTime}}
+            .automation-steps-scroll(ng-if='libraryEdit.steps.length>0')
+              table.table.table-condensed.table-bordered.automation-steps-table
+                thead
+                  tr
+                    th.automation-step-drag-col
+                    th 显示名
+                    th 断言/步骤
+                    th 参数
+                    th.automation-step-actions-col 操作
+                tbody
+                  tr.automation-step-row(
+                    ng-repeat='s in libraryEdit.steps track by s._id'
+                    ng-class='{"automation-step-dragging": draggingStepIndex === $index && dragStepContext === "library", "automation-step-drop-target": dropTargetStepIndex === $index && dragStepContext === "library"}'
+                    ng-on-dragover='onStepDragOverRow($event, $index, "library")'
+                    ng-on-dragleave='onStepDragLeaveRow($event, $index)'
+                    ng-on-drop='onStepDrop($event, $index, "library")'
+                  )
+                    td.automation-step-drag-col
+                      span.automation-step-drag-handle(
+                        ng-attr-draggable='{{canReorderStepAt($index, "library") ? "true" : "false"}}'
+                        title='拖拽排序'
+                        ng-on-dragstart='onStepDragStart($event, $index, "library")'
+                        ng-on-dragend='onStepDragEnd($event)'
+                      )
+                        i.fa.fa-bars.text-muted(ng-if='canReorderStepAt($index, "library")')
+                    td
+                      span.text-muted(ng-if='!stepDisplayLabel(s)') —
+                      span(ng-if='stepDisplayLabel(s)') {{stepDisplayLabel(s)}}
+                    td
+                      span(ng-if='s.action==="wait"') 等待={{s.waitMs != null ? (s.waitMs/1000) : 0}}s
+                      span(ng-if='s.action!=="wait" && s.action!=="start" && s.action!=="stop"')
+                        span(ng-if='s.action==="tap"') tap{{tapOrdinalForStep(libraryEdit.steps, $index)}}
+                        span(ng-if='s.action==="swipe"') swipe{{swipeOrdinalForStep(libraryEdit.steps, $index)}}
+                        span(ng-if='s.action==="input_text"') 输入{{inputTextOrdinalForStep(libraryEdit.steps, $index)}}
+                        span(ng-if='s.action!=="tap" && s.action!=="swipe" && s.action!=="input_text"') {{s.action}}
+                      span(ng-if='s.action==="start"') start
+                      span(ng-if='s.action==="stop"') stop
+                    td.automation-step-params-cell
+                      span(ng-if='s.action==="tap"')
+                        | xP={{s.xP}}, yP={{s.yP}}
+                        span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                      span(ng-if='s.action==="swipe"')
+                        | ({{s.x1P}},{{s.y1P}})→({{s.x2P}},{{s.y2P}}) {{s.durationMs}}ms
+                        span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                      span(ng-if='s.action==="assert_visual_match"')
+                        | baseline={{s.baselineIndex}}, 阈值={{baselineThresholdDisplay(s, libraryEdit.baselinesMeta)}}
+                        span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                      span(ng-if='s.action==="assert_text_contains"')
+                        | {{s.expectedText}}
+                        span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                      span(ng-if='s.action==="input_text"')
+                        | xP={{s.xP}}, yP={{s.yP}} · {{ inputTextStepPreview(s) }}
+                        span.text-muted(ng-if='s.stepDelayMs != null && s.stepDelayMs !== 500')  · 延时{{(s.stepDelayMs/1000).toFixed(2)}}s
+                      span(ng-if='s.action==="start" || s.action==="stop"') —
+                    td.automation-step-actions-cell
+                      .automation-step-action-btns(ng-if='canMutateLibraryStep(s)')
+                        button.btn.btn-xs.btn-info(type='button' ng-click='openStepEditor($index, "library")' title='编辑本步') 编辑
+                        button.btn.btn-xs.btn-warning(type='button' ng-click='insertStepAfter($index, "wait", "library")' title='在此步后插入等待') 等待
+                        button.btn.btn-xs.btn-success(type='button' ng-click='insertStepAfter($index, "tap", "library")' title='在此步后插入点击') 插入
+                        button.btn.btn-xs.btn-default(type='button' ng-click='insertStepAfter($index, "swipe", "library")' title='在此步后插入滑动(可编辑起止点)') 滑动
+                        button.btn.btn-xs.btn-primary(type='button' ng-click='insertStepAfter($index, "assert_text", "library")' title='在此步后插入文本断言') 文本
+                        button.btn.btn-xs.btn-info(type='button' ng-click='insertInputTextAfter($index, "library")' title='在此步后插入：先点坐标再输入文本（若上一步为点击则沿用坐标）') 输入文本
+                        button.btn.btn-xs.btn-automation-visual(
+                          type='button'
+                          ng-click='insertVisualAssertionAfter($index, "library")'
+                          ng-disabled='baselineBusy'
+                          title='拍摄当前画面为基线并插入视觉断言（默认阈值 0.95，可在编辑中修改）'
+                        )
+                          span(ng-if='!baselineBusy') 视觉
+                          span(ng-if='baselineBusy') …
+                        button.btn.btn-xs.btn-danger(type='button' ng-click='deleteStepAt($index, "library")' title='删除本步') 删
+            .m-t-md
+              button.btn.btn-sm.btn-primary(type='button' ng-click='saveLibraryRecording()' ng-disabled='libraryEdit.saving')
+                span(ng-if='!libraryEdit.saving') 保存到服务器
+                span(ng-if='libraryEdit.saving') 保存中…
+              button.btn.btn-sm.btn-default.m-l-sm(type='button' ng-click='closeLibraryEditor()' ng-disabled='libraryEdit.saving') 取消
+            .panel.panel-default.m-t-md(ng-if="stepEdit && stepEdit.target === 'library'")
+              .panel-heading
+                span 编辑步骤
+                span.text-muted.small.m-l-sm ({{ stepEdit.actionLabel }})
+              .panel-body
+                .form-group
+                  label 显示名称（可选）
+                  input.form-control.input-sm(type='text' ng-model='stepEdit.draft.stepLabel' placeholder='例如：打开菜单')
+                .form-group(ng-if='stepEdit.kind && stepEdit.kind !== "wait"')
+                  label 延时（本步执行前，秒）
+                  input.form-control.input-sm(type='number' step='0.05' min='0' max='120' ng-model='stepEdit.draft.delaySeconds')
+                  span.text-muted.small 默认 0.5；0 表示不等待
+                .form-group(ng-if='stepEdit.kind === "tap"')
+                  label xP (0~1)
+                  input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.xP')
+                  label.m-t-sm yP (0~1)
+                  input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.yP')
+                .form-group(ng-if='stepEdit.kind === "swipe"')
+                  label 起点 x1P / y1P
+                  input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.x1P')
+                  input.form-control.input-sm.m-t-sm(type='number' step='0.0001' ng-model='stepEdit.draft.y1P')
+                  label.m-t-sm 终点 x2P / y2P
+                  input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.x2P')
+                  input.form-control.input-sm.m-t-sm(type='number' step='0.0001' ng-model='stepEdit.draft.y2P')
+                  label.m-t-sm 时长 (ms，50~8000)
+                  input.form-control.input-sm(type='number' step='10' min='50' max='8000' ng-model='stepEdit.draft.durationMs')
+                .form-group(ng-if='stepEdit.kind === "wait"')
+                  label 等待秒数
+                  input.form-control.input-sm(type='number' step='0.1' min='0' ng-model='stepEdit.draft.waitSeconds')
+                .form-group(ng-if='stepEdit.kind === "assert_text"')
+                  label 期望包含文本（支持变量）
+                  input.form-control.input-sm(type='text' ng-model='stepEdit.draft.expectedText' placeholder='如 登录成功 或 user_ 加变量占位符')
+                .form-group(ng-if='stepEdit.kind === "input_text"')
+                  label 点击坐标 xP / yP（先点输入框聚焦）
+                  input.form-control.input-sm(type='number' step='0.0001' ng-model='stepEdit.draft.xP')
+                  input.form-control.input-sm.m-t-sm(type='number' step='0.0001' ng-model='stepEdit.draft.yP')
+                  label.m-t-sm 输入内容（支持变量，见表头说明）
+                  input.form-control.input-sm(type='text' ng-model='stepEdit.draft.inputText' placeholder='要输入到设备的文本')
+                .form-group(ng-if='stepEdit.kind === "assert_visual"')
+                  label 阈值（0~1，越高越严格）
+                  input.form-control.input-sm(type='number' step='0.01' min='0' max='1' ng-model='stepEdit.draft.threshold')
+                  label.m-t-sm 基线索引（一般无需修改）
+                  input.form-control.input-sm(type='number' step='1' min='0' ng-model='stepEdit.draft.baselineIndex')
+              .panel-footer
+                button.btn.btn-sm.btn-primary(type='button' ng-click='saveStepEditor()') 保存
+                button.btn.btn-sm.btn-default.m-l-sm(type='button' ng-click='cancelStepEditor()') 取消
 
     .m-t-md.detail-replay-records(ng-if='detailReplayRows.length')
       .heading
@@ -125,5 +358,5 @@
               td.selectable {{row.started}}
               td.selectable {{row.ended}}
               td
-                a.btn.btn-xs.btn-primary(ng-href="{{row.downloadUrl}}" target='_blank' rel='noopener') 下载
+                a.btn.btn-xs.btn-primary(ng-href="{{row.downloadUrl}}" target='_blank' rel='noopener') 测试报告
 

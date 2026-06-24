@@ -10,7 +10,7 @@ module.exports = angular.module('device-list.bulk-replay', [
     , controller: 'DeviceListBulkReplayCtrl'
     }
   })
-  .controller('DeviceListBulkReplayCtrl', function($scope, $http, $interval, $q, BulkRunnerService, GroupService) {
+  .controller('DeviceListBulkReplayCtrl', function($scope, $http, $interval, $q, $window, BulkRunnerService, GroupService) {
     // recordingsAll: all recordings from server
     // recordings: filtered list (used by dropdown)
     // recordingsPage: paginated slice for the list table
@@ -26,6 +26,69 @@ module.exports = angular.module('device-list.bulk-replay', [
     $scope.activeReplayRunIds = {}
     $scope.replayPollingTimer = null
     $scope.replayJoinedDevices = []
+    $scope.recordingDeletingId = ''
+
+    $scope.triggerImportRecording = function() {
+      var el = $window.document.getElementById('bulk-replay-import-input')
+      if (el) {
+        el.click()
+      }
+    }
+
+    $scope.onBulkReplayImportSelected = function(element) {
+      var file = element && element.files && element.files[0]
+      if (element) {
+        element.value = ''
+      }
+      if (!file) {
+        return
+      }
+      var name = String(file.name || '').toLowerCase()
+      var isPy = name.endsWith('.py') || (file.type && String(file.type).indexOf('python') !== -1)
+      var reader = new $window.FileReader()
+      reader.onload = function(e) {
+        $scope.$apply(function() {
+          var text = String(e.target.result || '')
+          var data
+          if (isPy) {
+            data = {pythonCode: text}
+          }
+          else {
+            try {
+              data = JSON.parse(text)
+            }
+            catch (ex) {
+              $window.alert('无法解析：请使用「下载脚本」生成的 .py，或接口返回的 JSON。')
+              return
+            }
+          }
+          $http.post('/api/v1/automation/recordings/import', data)
+            .then(function(res) {
+              var rec = res.data && res.data.recording
+              return $scope.loadRecordings().then(function() {
+                if (rec && rec.id) {
+                  $scope.selectedRecordingId = rec.id
+                }
+                var label = (rec && rec.name) ? rec.name : (rec && rec.id) || '已导入'
+                $window.alert('导入成功：' + label)
+              })
+            })
+            .catch(function(err) {
+              var msg = (err.data && err.data.description) || err.statusText || '导入失败'
+              if (typeof msg !== 'string') {
+                msg = '导入失败'
+              }
+              $window.alert(msg)
+            })
+        })
+      }
+      reader.onerror = function() {
+        $scope.$apply(function() {
+          $window.alert('读取文件失败')
+        })
+      }
+      reader.readAsText(file, 'UTF-8')
+    }
 
     function normalizeStr(v) {
       return String(v == null ? '' : v).toLowerCase().trim()
@@ -206,16 +269,33 @@ module.exports = angular.module('device-list.bulk-replay', [
         })
     }
 
-    $scope.downloadReplayCsv = function(run) {
-      window.open('/api/v1/automation/replay/runs/' + run.id + '/csv')
+    $scope.downloadReplayReport = function(run) {
+      window.open('/api/v1/automation/replay/runs/' + run.id + '/test-report')
     }
 
-    $scope.replayRecordingOnBatch = function(item) {
+    $scope.deleteRecording = function(item) {
       if (!item || !item.id) {
         return
       }
-      $scope.selectedRecordingId = item.id
-      $scope.startReplay()
+      var label = (item.name && String(item.name).trim()) || item.id
+      if (!$window.confirm('确定删除录制「' + label + '」？删除后不可恢复。')) {
+        return
+      }
+      $scope.recordingDeletingId = item.id
+      $http.delete('/api/v1/automation/recordings/' + encodeURIComponent(item.id))
+        .then(function() {
+          if (String($scope.selectedRecordingId).trim() === String(item.id).trim()) {
+            $scope.selectedRecordingId = ''
+          }
+          return $scope.loadRecordings()
+        })
+        .catch(function(err) {
+          var msg = (err && err.data && err.data.description) || (err && err.status) || '删除失败'
+          $window.alert(typeof msg === 'string' ? msg : '删除失败')
+        })
+        .finally(function() {
+          $scope.recordingDeletingId = ''
+        })
     }
 
     $scope.$on('$destroy', function() {

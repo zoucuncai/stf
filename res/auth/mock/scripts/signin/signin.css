@@ -60,25 +60,62 @@ body {
     box-sizing: border-box;
 }
 
-.login2 .login-wrapper .input-group-btn {
-    float: none !important;
-    display: flex;
-    align-items: stretch;
-    width: auto;
+.login2 .login-wrapper .stf-password-field {
     position: relative;
-    vertical-align: top;
+    flex: 1 1 auto;
+    width: 1% !important;
+    min-width: 0;
+    align-self: stretch;
 }
 
-.login2 .login-wrapper .input-group-btn .btn {
-    min-width: 48px;
+.login2 .login-wrapper .stf-password-field > .form-control {
+    width: 100% !important;
+    flex: none;
+    height: auto !important;
     min-height: 48px;
-    height: 100%;
+    padding-right: 48px;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+}
+
+/* Bootstrap .input-group .form-control:focus { z-index: 3 } would cover the eye — keep input below the toggle. */
+.login2 .login-wrapper .stf-password-field > .form-control:focus {
+    z-index: 1;
+}
+
+.login2 .login-wrapper .stf-password-field .stf-password-toggle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 48px;
+    margin: 0;
     padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: #555;
+    cursor: pointer;
+    line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    align-self: stretch;
-    box-sizing: border-box;
+    z-index: 6;
+    pointer-events: auto;
+}
+
+.login2 .login-wrapper .stf-password-field .stf-password-toggle:hover,
+.login2 .login-wrapper .stf-password-field .stf-password-toggle:focus {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: #333;
+    outline: none;
+}
+
+.login2 .login-wrapper .stf-password-field .stf-password-toggle .fa {
+    font-size: 17px;
 }
 
 .login2 .login-wrapper .checkbox {

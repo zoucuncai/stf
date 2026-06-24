@@ -13,16 +13,29 @@
     device-list-bulk-device-table
 
     .bulk-replay-toolbar
-      .form-group
-        label 录制脚本
-        select.form-control.input-sm(ng-model='selectedRecordingId' ng-options='item.id as item.name for item in recordings')
-      .form-group
-        button.btn.btn-sm.btn-primary(ng-click='startReplay()')
+      .bulk-replay-toolbar-row
+        label.bulk-replay-toolbar-label(for='bulk-replay-script-select') 录制脚本
+        select#bulk-replay-script-select.form-control.input-sm.bulk-replay-select(
+          ng-model='selectedRecordingId'
+          ng-options='item.id as item.name for item in recordings'
+        )
+        button.btn.btn-sm.btn-primary.bulk-replay-start(type='button' ng-click='startReplay()')
           span(translate) 开始回放
 
-    .heading.m-t-md
+    .heading.m-t-md.heading-with-action
       i.fa.fa-list
       span 录制脚本列表
+      button.btn.btn-sm.btn-default(
+        type='button'
+        ng-click='triggerImportRecording()'
+        title='选择下载的 .py（含完整数据块）或接口返回的 JSON'
+      ) 导入
+    input#bulk-replay-import-input(
+      type='file'
+      accept='application/json,.json,.py,text/x-python'
+      style='position:absolute;width:0;height:0;opacity:0;'
+      onchange='angular.element(this).scope().onBulkReplayImportSelected(this)'
+    )
     .widget-content.padded
       .form-inline.m-b-sm
         input.form-control.input-sm(
@@ -48,9 +61,18 @@
             td.selectable {{item.name}}
             td.selectable {{item.createdByName || item.createdByEmail}}
             td {{item.createdAt}}
-            td
-              a.btn.btn-xs.btn-primary(ng-href='/api/v1/automation/recordings/{{item.id}}/download' target='_blank' rel='noopener') 下载脚本
-              button.btn.btn-xs.btn-success.m-l-sm(ng-click='replayRecordingOnBatch(item)') 对所选设备回放
+            td.bulk-replay-recording-actions
+              a.btn.btn-xs.btn-primary(
+                ng-href='/api/v1/automation/recordings/{{item.id}}/download'
+                target='_blank'
+                rel='noopener'
+                title='.py 内含脚本与完整录制数据（步骤、基线等），可再「导入」还原'
+              ) 下载脚本
+              button.btn.btn-xs.btn-danger.bulk-replay-delete-btn(
+                type='button'
+                ng-click='deleteRecording(item)'
+                ng-disabled='recordingDeletingId === item.id'
+              ) {{ recordingDeletingId === item.id ? '删除中…' : '删除' }}
 
       .text-center.m-t-sm(ng-if='recordingTotalPages > 1')
         button.btn.btn-xs.btn-default(ng-disabled='recordingPage <= 1' ng-click='prevRecordingPage()')
@@ -79,7 +101,7 @@
           td.selectable {{run.id}}
           td.selectable {{run.recordingName}}
           td.selectable {{run.createdByName || run.createdByEmail}}
-          td {{run.status === "finished" ? "已完成" : (run.status === "running" ? "执行中" : run.status)}}
+          td {{run.status === "finished" ? "已完成" : (run.status === "running" ? "执行中" : (run.status === "failed" ? "失败" : run.status))}}
           td {{run.progressDone || 0}} / {{run.totalDevices || 0}}
           td {{run.successDevices || 0}}
           td {{run.failDevices || 0}}
@@ -87,5 +109,5 @@
           td {{run.startedAt || run.createdAt}}
           td {{run.endedAt || ''}}
           td
-            button.btn.btn-xs.btn-primary(ng-click='downloadReplayCsv(run)') 下载CSV
+            button.btn.btn-xs.btn-primary(ng-click='downloadReplayReport(run)') 测试报告
     .text-muted(ng-if='!replayRuns.length') 暂无记录

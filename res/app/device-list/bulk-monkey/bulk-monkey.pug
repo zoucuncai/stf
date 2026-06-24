@@ -47,11 +47,11 @@
             td {{run.id}}
             td {{run.packageName}}
             td {{run.argsText}}
-            td {{run.status}}
+            td {{run.status === "finished" ? "已完成" : (run.status === "running" ? "执行中" : (run.status === "failed" ? "失败" : run.status))}}
             td {{run.successDevices || 0}}
             td {{run.failDevices || 0}}
             td {{run.passRate || 0}}%
             td {{run.startedAt || run.createdAt}}
             td {{run.endedAt || '-'}}
             td
-              a(href='' ng-click='downloadMonkeyCsv(run); $event.preventDefault()') 下载CSV（含设备明细）
+              a(href='' ng-click='downloadMonkeyReport(run); $event.preventDefault()') 测试报告

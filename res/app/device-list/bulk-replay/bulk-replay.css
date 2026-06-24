@@ -3,21 +3,40 @@
 }
 
 .bulk-action-panel .bulk-replay-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px 16px;
   margin-bottom: 12px;
 }
 
-.bulk-action-panel .bulk-replay-toolbar .form-group label {
-  display: block;
-  margin-bottom: 4px;
-  font-weight: normal;
+.bulk-action-panel .bulk-replay-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  max-width: 100%;
 }
 
-.bulk-action-panel .bulk-replay-toolbar select.form-control.input-sm {
-  min-width: 200px;
+.bulk-action-panel .bulk-replay-toolbar-label {
+  margin: 0;
+  font-weight: normal;
+  line-height: 30px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.bulk-action-panel .bulk-replay-toolbar .bulk-replay-select {
+  flex: 0 1 320px;
+  width: 280px;
+  max-width: min(320px, 100%);
+  min-width: 180px;
+  vertical-align: middle;
+}
+
+.bulk-action-panel .bulk-replay-toolbar .bulk-replay-start {
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.bulk-action-panel .bulk-replay-recording-actions .bulk-replay-delete-btn {
+  margin-left: 12px;
 }
 
 .bulk-action-panel .radio-inline + .radio-inline {
@@ -26,4 +45,15 @@
 
 .bulk-action-panel .form-inline.m-b-sm {
   margin-bottom: 12px;
+}
+
+.bulk-action-panel .heading-with-action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.bulk-action-panel .heading-with-action .btn {
+  margin-left: auto;
 }

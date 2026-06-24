@@ -1,9 +1,15 @@
 require('./recorder.css')
 
+var automationVars = require('../../../../../lib/util/automation-variables')
+var expandAutomationVariables = automationVars.expandAutomationVariables
+var normalizeAutomationInputText = automationVars.normalizeAutomationInputText
+var rgbaByteArraysSimilarity = require('../../../../../lib/util/automation-visual-similarity')
+  .rgbaByteArraysSimilarity
+
 module.exports = angular.module('stf.automation.recorder', [
   require('stf/storage').name
 ])
-  .controller('AutomationRecorderCtrl', function($scope, $http, $timeout, $q, StorageService, $window) {
+  .controller('AutomationRecorderCtrl', function($scope, $http, $timeout, $q, $window, StorageService) {
     var stepSeq = 0
 
     function nextStepId() {
@@ -14,6 +20,26 @@ module.exports = angular.module('stf.automation.recorder', [
       var n = 0
       for (var i = 0; i <= index && i < (steps || []).length; i++) {
         if (steps[i].action === 'tap') {
+          n += 1
+        }
+      }
+      return n
+    }
+
+    $scope.swipeOrdinalForStep = function(steps, index) {
+      var n = 0
+      for (var i = 0; i <= index && i < (steps || []).length; i++) {
+        if (steps[i].action === 'swipe') {
+          n += 1
+        }
+      }
+      return n
+    }
+
+    $scope.inputTextOrdinalForStep = function(steps, index) {
+      var n = 0
+      for (var i = 0; i <= index && i < (steps || []).length; i++) {
+        if (steps[i].action === 'input_text') {
           n += 1
         }
       }
@@ -38,6 +64,55 @@ module.exports = angular.module('stf.automation.recorder', [
         control.touchCommit(nextSeq())
         control.gestureStop(nextSeq())
       }, 120)
+    }
+
+    function performRecordedSwipe(control, step) {
+      var x1P = Number(step.x1P)
+      var y1P = Number(step.y1P)
+      var x2P = Number(step.x2P)
+      var y2P = Number(step.y2P)
+      if (isNaN(x1P) || isNaN(y1P) || isNaN(x2P) || isNaN(y2P)) {
+        return $q.when()
+      }
+      var durationMs = Number(step.durationMs)
+      if (!isFinite(durationMs) || durationMs < 50) {
+        durationMs = 300
+      }
+      if (durationMs > 8000) {
+        durationMs = 8000
+      }
+      var seq = -1
+      var cycle = 100
+      function nextSeq() {
+        return ++seq >= cycle ? (seq = 0) : seq
+      }
+      var pressure = 0.5
+      var n = Math.max(3, Math.min(24, Math.ceil(durationMs / 45)))
+      var sliceMs = Math.max(10, Math.floor(durationMs / n))
+
+      control.gestureStart(nextSeq())
+      control.touchDown(nextSeq(), 0, x1P, y1P, pressure)
+      control.touchCommit(nextSeq())
+
+      var chain = $q.when()
+      var k
+      for (k = 1; k <= n; k++) {
+        ;(function(j) {
+          chain = chain.then(function() {
+            var t = j / n
+            var xP = x1P + (x2P - x1P) * t
+            var yP = y1P + (y2P - y1P) * t
+            control.touchMove(nextSeq(), 0, xP, yP, pressure)
+            control.touchCommit(nextSeq())
+            return $timeout(angular.noop, sliceMs)
+          })
+        })(k)
+      }
+      return chain.then(function() {
+        control.touchUp(nextSeq(), 0)
+        control.touchCommit(nextSeq())
+        control.gestureStop(nextSeq())
+      })
     }
 
     function resolveControl() {
@@ -137,27 +212,271 @@ module.exports = angular.module('stf.automation.recorder', [
       })
     }
 
+    function resolveBrowserAssetUrl(href) {
+      var h = String(href || '').trim()
+      if (!h) {
+        return ''
+      }
+      if (/^https?:\/\//i.test(h)) {
+        return h
+      }
+      if (h[0] !== '/') {
+        return $window.location.origin + '/' + h
+      }
+      return $window.location.origin + h
+    }
+
+    function loadImageFromHttpUrl(absUrl) {
+      return $http.get(absUrl, {responseType: 'arraybuffer'}).then(function(res) {
+        var ct = (res.headers && res.headers('content-type')) || 'image/jpeg'
+        var mime = String(ct).indexOf('image/') === 0 ? ct : 'image/jpeg'
+        var blob = new Blob([res.data], {type: mime})
+        return $q(function(resolve, reject) {
+          var o = $window.URL.createObjectURL(blob)
+          var img = new $window.Image()
+          img.onload = function() {
+            $window.URL.revokeObjectURL(o)
+            resolve(img)
+          }
+          img.onerror = function() {
+            $window.URL.revokeObjectURL(o)
+            reject(new Error('基线图加载失败'))
+          }
+          img.src = o
+        })
+      })
+    }
+
+    function loadImageFromDataUrl(dataUrl) {
+      return $q(function(resolve, reject) {
+        var img = new $window.Image()
+        img.onload = function() {
+          resolve(img)
+        }
+        img.onerror = function() {
+          reject(new Error('当前画面图加载失败'))
+        }
+        img.src = dataUrl
+      })
+    }
+
+    function compareReplayImagesSimilarity(imgA, imgB, grid) {
+      grid = grid || 64
+      var canvas = $window.document.createElement('canvas')
+      canvas.width = grid
+      canvas.height = grid
+      var ctx = canvas.getContext('2d')
+      if (!ctx) {
+        return 0
+      }
+      ctx.drawImage(imgA, 0, 0, grid, grid)
+      var d1 = ctx.getImageData(0, 0, grid, grid).data
+      ctx.clearRect(0, 0, grid, grid)
+      ctx.drawImage(imgB, 0, 0, grid, grid)
+      var d2 = ctx.getImageData(0, 0, grid, grid).data
+      return rgbaByteArraysSimilarity(d1, d2)
+    }
+
+    function replayImageToDataUrl(img) {
+      if (!img) {
+        return null
+      }
+      try {
+        var c = $window.document.createElement('canvas')
+        var w = img.naturalWidth || img.width || 1
+        var h = img.naturalHeight || img.height || 1
+        c.width = w
+        c.height = h
+        var ctx = c.getContext('2d')
+        if (!ctx) {
+          return null
+        }
+        ctx.drawImage(img, 0, 0)
+        return c.toDataURL('image/jpeg', 0.88)
+      }
+      catch (e) {
+        return null
+      }
+    }
+
+    function formatReplayErr(err) {
+      if (err == null) {
+        return '未知错误'
+      }
+      if (typeof err === 'string') {
+        return err
+      }
+      if (err.message) {
+        return String(err.message)
+      }
+      if (err.data != null) {
+        if (typeof err.data === 'string') {
+          return err.data
+        }
+        if (err.data.description) {
+          return String(err.data.description)
+        }
+        if (err.data.error) {
+          return String(err.data.error)
+        }
+      }
+      if (err.status) {
+        return 'HTTP ' + err.status + (err.statusText ? ' ' + err.statusText : '')
+      }
+      try {
+        return JSON.stringify(err)
+      }
+      catch (e2) {
+        return String(err)
+      }
+    }
+
+    function captureReplayScreenDataUrl() {
+      return $q(function(resolve) {
+        var canvas = document.querySelector('.remote-control canvas.screen') ||
+          document.querySelector('canvas.screen')
+        if (canvas && canvas.width > 2 && canvas.height > 2 && typeof canvas.toDataURL === 'function') {
+          try {
+            resolve(canvas.toDataURL('image/jpeg', 0.82))
+            return
+          }
+          catch (e) {
+            resolve(null)
+            return
+          }
+        }
+        var ctrl = resolveControl()
+        if (!ctrl || !ctrl.screenshot) {
+          resolve(null)
+          return
+        }
+        ctrl.screenshot().then(function(result) {
+          var href = result && result.body && result.body.href
+          if (!href) {
+            resolve(null)
+            return
+          }
+          if (String(href).indexOf('data:') === 0) {
+            resolve(href)
+            return
+          }
+          $http.get(href, {responseType: 'arraybuffer'}).then(function(res) {
+            var blob = new Blob([res.data], {type: 'image/jpeg'})
+            var reader = new FileReader()
+            reader.onload = function() {
+              resolve(reader.result)
+            }
+            reader.onerror = function() {
+              resolve(null)
+            }
+            reader.readAsDataURL(blob)
+          }).catch(function() {
+            resolve(null)
+          })
+        }).catch(function() {
+          resolve(null)
+        })
+      })
+    }
+
+    var DEFAULT_STEP_DELAY_MS = 500
+
+    function shouldApplyStepPreDelay(action) {
+      var a = String(action || '').trim()
+      return a === 'tap' || a === 'swipe' || a === 'input_text' ||
+        a === 'assert_text_contains' || a === 'assert_visual_match'
+    }
+
+    function resolveStepPreDelayMs(step) {
+      var ms = Number(step && step.stepDelayMs)
+      if (!isFinite(ms) || ms < 0) {
+        ms = DEFAULT_STEP_DELAY_MS
+      }
+      if (ms > 120000) {
+        ms = 120000
+      }
+      return ms
+    }
+
     function evaluateReplaySteps(recording) {
       var control = resolveControl()
       if (!control) {
         return $q.reject(new Error('设备控制不可用'))
       }
       var steps = (recording && recording.stepsJson) || []
-
       var totalCases = 0
       var successCases = 0
       var errors = []
+      var logLines = []
+      var reportArtifacts = []
 
-      return steps.reduce(function(prev, step) {
+      function log(msg) {
+        logLines.push(new Date().toISOString() + ' [INFO] ' + msg)
+      }
+
+      function stepKindLabel(step, idx) {
+        var a = (step && step.action) ? String(step.action).trim() : ''
+        if (a === 'tap') {
+          return '点击'
+        }
+        if (a === 'swipe') {
+          return '滑动'
+        }
+        if (a === 'assert_text_contains') {
+          return '文字断言'
+        }
+        if (a === 'assert_visual_match') {
+          return '视觉断言'
+        }
+        if (a === 'wait') {
+          return '等待'
+        }
+        if (a === 'input_text') {
+          return '文本输入'
+        }
+        return a || ('步骤' + idx)
+      }
+
+      function pushFailureArtifact(step, idx, errMsg, extras) {
+        extras = extras || {}
+        var st = extras.stepTitle || stepKindLabel(step, idx)
+        var title = '失败 #' + (reportArtifacts.length + 1) + ' - 步骤' + idx + ': ' + st
+        return captureReplayScreenDataUrl().then(function(dataUrl) {
+          var art = {
+            title: title
+          , detail: errMsg
+          , actualImageDataUrl: dataUrl
+          }
+          if (extras.expectedText != null) {
+            art.expectedText = extras.expectedText
+          }
+          if (extras.expectedImageHref != null) {
+            art.expectedImageHref = extras.expectedImageHref
+          }
+          if (extras.expectedImageDataUrl != null) {
+            art.expectedImageDataUrl = extras.expectedImageDataUrl
+          }
+          if (extras.baselineIndex != null) {
+            art.baselineIndex = extras.baselineIndex
+          }
+          reportArtifacts.push(art)
+        })
+      }
+
+      return steps.reduce(function(prev, step, idx) {
         return prev.then(function() {
           var action = (step && step.action) ? String(step.action).trim() : ''
+          log('步骤 ' + idx + ' 开始 ' + action)
 
+          function innerStep() {
           if (action === 'wait') {
             var waitMs = Number(step.waitMs || 0)
             if (!isFinite(waitMs) || waitMs <= 0) {
               return $timeout(angular.noop, 0)
             }
-            return $timeout(angular.noop, waitMs)
+            return $timeout(angular.noop, waitMs).then(function() {
+              log('步骤 ' + idx + ' 等待结束 ' + waitMs + 'ms')
+            })
           }
 
           if (action === 'tap') {
@@ -166,66 +485,212 @@ module.exports = angular.module('stf.automation.recorder', [
             if (isNaN(xP) || isNaN(yP)) {
               return $timeout(angular.noop, 0)
             }
-            return performRecordedTap(control, xP, yP).then(function() {
-              return $timeout(angular.noop, 280)
-            })
+            return performRecordedTap(control, xP, yP)
+              .then(function() {
+                return $timeout(angular.noop, 280)
+              })
+              .then(function() {
+                log('步骤 ' + idx + ' tap 完成')
+              })
+              .catch(function(err) {
+                var msg = err && err.message ? err.message : String(err)
+                errors.push(msg)
+                log('步骤 ' + idx + ' tap 失败 ' + msg)
+                return pushFailureArtifact(step, idx, msg, {stepTitle: '点击执行失败'})
+              })
+          }
+
+          if (action === 'swipe') {
+            return performRecordedSwipe(control, step)
+              .then(function() {
+                return $timeout(angular.noop, 320)
+              })
+              .then(function() {
+                log('步骤 ' + idx + ' swipe 完成')
+              })
+              .catch(function(err) {
+                var msg = err && err.message ? err.message : String(err)
+                errors.push(msg)
+                log('步骤 ' + idx + ' swipe 失败 ' + msg)
+                return pushFailureArtifact(step, idx, msg, {stepTitle: '滑动执行失败'})
+              })
+          }
+
+          if (action === 'input_text') {
+            var ixP = Number(step.xP)
+            var iyP = Number(step.yP)
+            var rawIn = (step.inputText != null ? String(step.inputText) : '').trim()
+            if (!rawIn) {
+              log('步骤 ' + idx + ' input_text 跳过（无文本）')
+              return $timeout(angular.noop, 0)
+            }
+            var toType = normalizeAutomationInputText(expandAutomationVariables(rawIn))
+            if (isNaN(ixP) || isNaN(iyP)) {
+              return $timeout(angular.noop, 0)
+            }
+            return performRecordedTap(control, ixP, iyP)
+              .then(function() {
+                return $timeout(angular.noop, 380)
+              })
+              .then(function() {
+                // Paste avoids IME turning ASCII "." into "。" (DoType / synthetic keys).
+                return control.paste(toType)
+                  .then(function(res) {
+                    if (res && res.success) {
+                      return $timeout(angular.noop, 400)
+                    }
+                    control.type(toType)
+                    return $timeout(angular.noop, 220)
+                  })
+                  .catch(function() {
+                    control.type(toType)
+                    return $timeout(angular.noop, 220)
+                  })
+              })
+              .then(function() {
+                log('步骤 ' + idx + ' 文本输入完成 len=' + String(toType).length)
+              })
+              .catch(function(err) {
+                var msg = err && err.message ? err.message : String(err)
+                errors.push(msg)
+                log('步骤 ' + idx + ' 文本输入失败 ' + msg)
+                return pushFailureArtifact(step, idx, msg, {stepTitle: '文本输入失败'})
+              })
           }
 
           if (action === 'assert_text_contains') {
             totalCases += 1
-            var expected = (step.expectedText || '').trim()
+            var expected = expandAutomationVariables((step.expectedText || '').trim())
             return withTimeout(assertTextContains(control, expected), 12000, '文本断言')
               .then(function() {
                 successCases += 1
+                log('步骤 ' + idx + ' 文本断言通过')
                 return $timeout(angular.noop, 350)
               })
               .catch(function(err) {
-                // Do NOT stop the replay chain; record failure and continue.
-                errors.push(err && err.message ? err.message : ('文本断言失败：' + expected))
-                return $timeout(angular.noop, 0)
+                var em = err && err.message ? err.message : ('文本断言失败：' + expected)
+                errors.push(em)
+                log('步骤 ' + idx + ' 文本断言失败 ' + em)
+                return pushFailureArtifact(step, idx, em, {
+                  expectedText: expected
+                , stepTitle: '文字断言失败'
+                })
               })
           }
 
           if (action === 'assert_visual_match') {
-            // Visual match requires image diff. Keep current behavior for now:
-            // count as a case and assume it passed after delay.
-            // (We still count it so passRate/caseSuccessRate match your UI expectation.)
             totalCases += 1
-            return $timeout(angular.noop, 500).then(function() {
+            var vMetaList = (recording && recording.baselinesMeta) || []
+            var vBi = Number(step.baselineIndex)
+            var vMeta = (isFinite(vBi) && vBi >= 0 && vBi < vMetaList.length) ? vMetaList[vBi] : null
+            var vTh = vMeta && vMeta.threshold != null ? Number(vMeta.threshold) : 0.95
+            if (!isFinite(vTh) || vTh <= 0) {
+              vTh = 0.95
+            }
+            if (vTh > 1) {
+              vTh = 1
+            }
+            if (!vMeta || (!vMeta.href && !vMeta.inlineDataUrl)) {
+              var vMiss = '视觉断言失败：基线不存在(baselineIndex=' + step.baselineIndex + ')'
+              errors.push(vMiss)
+              log('步骤 ' + idx + ' ' + vMiss)
+              return pushFailureArtifact(step, idx, vMiss, {
+                stepTitle: '视觉断言失败'
+              , expectedImageHref: vMeta && vMeta.href
+              , baselineIndex: step.baselineIndex
+              })
+            }
+            var vAbs = vMeta.href ? resolveBrowserAssetUrl(vMeta.href) : ''
+            var vBaselineImgRef = null
+            function loadBaselineForReplay() {
+              if (vMeta.inlineDataUrl) {
+                return loadImageFromDataUrl(vMeta.inlineDataUrl).then(function(baselineImg) {
+                  vBaselineImgRef = baselineImg
+                  return baselineImg
+                })
+              }
+              return loadImageFromHttpUrl(vAbs).then(function(baselineImg) {
+                vBaselineImgRef = baselineImg
+                return baselineImg
+              })
+            }
+            return withTimeout(
+              loadBaselineForReplay().then(function() {
+                return captureReplayScreenDataUrl().then(function(actualDataUrl) {
+                  if (!actualDataUrl) {
+                    throw new Error('无法捕获当前画面')
+                  }
+                  return loadImageFromDataUrl(actualDataUrl).then(function(actualImg) {
+                    var bImg = vBaselineImgRef
+                    var vScore = compareReplayImagesSimilarity(bImg, actualImg)
+                    if (vScore < vTh) {
+                      throw new Error('相似度 ' + vScore.toFixed(3) + ' < 阈值 ' + vTh.toFixed(3))
+                    }
+                    return vScore
+                  })
+                })
+              })
+            , 20000
+            , '视觉断言'
+            ).then(function(vScore) {
               successCases += 1
+              log('步骤 ' + idx + ' 视觉断言通过 相似度=' + Number(vScore).toFixed(4) +
+                ' 阈值>=' + vTh.toFixed(3))
+              return $timeout(angular.noop, 200)
+            }).catch(function(err) {
+              var vm = formatReplayErr(err)
+              if (vm.indexOf('相似度') === -1 && vm.indexOf('阈值') === -1) {
+                vm = '视觉断言失败：' + vm
+              }
+              errors.push(vm)
+              log('步骤 ' + idx + ' ' + vm)
+              var embedded = vBaselineImgRef ? replayImageToDataUrl(vBaselineImgRef) : null
+              if (!embedded && vMeta.inlineDataUrl) {
+                embedded = vMeta.inlineDataUrl
+              }
+              return pushFailureArtifact(step, idx, vm, {
+                stepTitle: '视觉断言失败'
+              , expectedImageHref: vMeta.href
+              , expectedImageDataUrl: embedded
+              , baselineIndex: step.baselineIndex
+              })
             })
           }
 
           return $timeout(angular.noop, 0)
+          }
+
+          if (shouldApplyStepPreDelay(action)) {
+            var pdMs = resolveStepPreDelayMs(step)
+            if (pdMs <= 0) {
+              return innerStep()
+            }
+            return $timeout(angular.noop, pdMs).then(function() {
+              log('步骤 ' + idx + ' 前置延时 ' + pdMs + 'ms')
+              return innerStep()
+            })
+          }
+          return innerStep()
         })
       }, $q.when()).then(function() {
         return {
           totalCases: totalCases
         , successCases: successCases
         , errors: errors
+        , logLines: logLines
+        , reportArtifacts: reportArtifacts
         }
       })
     }
 
     $scope.recordingForm = {name: ''}
     $scope.recordingSteps = []
-    $scope.recordingStepPage = 1
-    $scope.recordingStepPageSize = 10
     $scope.recordingActive = false
     $scope.recordingLocked = false
     $scope.recordingBaselinesMeta = []
     $scope.recordings = []
     $scope.recordingError = ''
     $scope.baselineBusy = false
-
-    // Manual wait step (user-inserted), similar to how assertions are added.
-    $scope.waitStepSeconds = 0
-
-    $scope.assertionDraft = {
-      type: 'visual'
-    , expectedText: ''
-    , threshold: 0.95
-    }
 
     $scope.replayState = {
       running: false
@@ -243,6 +708,7 @@ module.exports = angular.module('stf.automation.recorder', [
     }
 
     $scope.selectedRecordingId = ''
+    $scope.libraryEdit = null
     $scope.recordingNameTaken = false
     // Replay runs started from this device detail (same columns as 自动化测试记录).
     $scope.detailReplayRows = []
@@ -250,31 +716,459 @@ module.exports = angular.module('stf.automation.recorder', [
     $scope.currentReplayRecordingId = ''
     $scope.currentReplayStepsSummary = ''
 
-    $scope.recordingStepTotalPages = function() {
-      var total = ($scope.recordingSteps || []).length
-      return Math.max(1, Math.ceil(total / $scope.recordingStepPageSize))
-    }
+    $scope.stepEdit = null
+    $scope.draggingStepIndex = null
+    $scope.dropTargetStepIndex = null
+    $scope.dragStepContext = null
 
-    $scope.pagedRecordingSteps = function() {
-      var totalPages = $scope.recordingStepTotalPages()
-      if ($scope.recordingStepPage > totalPages) {
-        $scope.recordingStepPage = totalPages
+    function reorderableRangeFor(steps) {
+      steps = steps || []
+      var n = steps.length
+      if (n < 2) {
+        return {min: 1, max: -1}
       }
-      if ($scope.recordingStepPage < 1) {
-        $scope.recordingStepPage = 1
+      var last = steps[n - 1]
+      var hasStop = last && String(last.action || '').trim() === 'stop'
+      var max = hasStop ? n - 2 : n - 1
+      return {min: 1, max: max}
+    }
+
+    function stepsForReorderContext(ctx) {
+      ctx = ctx || 'recording'
+      if (ctx === 'library') {
+        return ($scope.libraryEdit && $scope.libraryEdit.steps) || []
       }
-      var start = ($scope.recordingStepPage - 1) * $scope.recordingStepPageSize
-      return ($scope.recordingSteps || []).slice(start, start + $scope.recordingStepPageSize)
+      return $scope.recordingSteps || []
     }
 
-    $scope.prevRecordingStepPage = function() {
-      if ($scope.recordingStepPage <= 1) return
-      $scope.recordingStepPage -= 1
+    $scope.canReorderStepAt = function(i, ctx) {
+      var r = reorderableRangeFor(stepsForReorderContext(ctx))
+      return i >= r.min && i <= r.max
     }
 
-    $scope.nextRecordingStepPage = function() {
-      if ($scope.recordingStepPage >= $scope.recordingStepTotalPages()) return
-      $scope.recordingStepPage += 1
+    $scope.onStepDragStart = function(e, index, ctx) {
+      ctx = ctx || 'recording'
+      if (!$scope.canReorderStepAt(index, ctx)) {
+        e.preventDefault()
+        return
+      }
+      $scope.dragStepContext = ctx
+      $scope.draggingStepIndex = index
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', String(index))
+    }
+
+    $scope.onStepDragEnd = function() {
+      $scope.draggingStepIndex = null
+      $scope.dropTargetStepIndex = null
+      $scope.dragStepContext = null
+      $scope.$applyAsync(angular.noop)
+    }
+
+    $scope.onStepDragOverRow = function(e, index, ctx) {
+      ctx = ctx || 'recording'
+      if ($scope.draggingStepIndex == null || $scope.dragStepContext !== ctx) {
+        return
+      }
+      if (!$scope.canReorderStepAt(index, ctx)) {
+        return
+      }
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      $scope.dropTargetStepIndex = index
+    }
+
+    $scope.onStepDragLeaveRow = function(e, index) {
+      if ($scope.dropTargetStepIndex === index) {
+        $scope.dropTargetStepIndex = null
+      }
+    }
+
+    $scope.onStepDrop = function(e, dropIndex, ctx) {
+      ctx = ctx || 'recording'
+      e.preventDefault()
+      e.stopPropagation()
+      var from = $scope.draggingStepIndex
+      $scope.dropTargetStepIndex = null
+      $scope.draggingStepIndex = null
+      var dragCtx = $scope.dragStepContext
+      $scope.dragStepContext = null
+      if (dragCtx !== ctx) {
+        return
+      }
+      if (from == null || from === dropIndex) {
+        return
+      }
+      if (!$scope.canReorderStepAt(from, ctx) || !$scope.canReorderStepAt(dropIndex, ctx)) {
+        return
+      }
+      var steps = stepsForReorderContext(ctx)
+      var item = steps.splice(from, 1)[0]
+      var to = dropIndex
+      if (from < to) {
+        to -= 1
+      }
+      steps.splice(to, 0, item)
+      $scope.$applyAsync(angular.noop)
+    }
+
+    $scope.stepDisplayLabel = function(s) {
+      if (!s || s.stepLabel == null) {
+        return ''
+      }
+      return String(s.stepLabel).trim()
+    }
+
+    $scope.inputTextStepPreview = function(s) {
+      if (!s || String(s.action || '').trim() !== 'input_text') {
+        return ''
+      }
+      var t = s.inputText != null ? String(s.inputText) : ''
+      if (!t.trim()) {
+        return '（未填文本）'
+      }
+      return t.length > 28 ? t.slice(0, 28) + '…' : t
+    }
+
+    $scope.baselineThresholdDisplay = function(s, metaListOverride) {
+      if (!s || String(s.action || '').trim() !== 'assert_visual_match') {
+        return ''
+      }
+      var metaArr = metaListOverride != null ? metaListOverride : $scope.recordingBaselinesMeta
+      var meta = (metaArr || [])[s.baselineIndex]
+      var t = meta && meta.threshold != null ? Number(meta.threshold) : 0.95
+      return isFinite(t) ? t : 0.95
+    }
+
+    function editStepsArray(target) {
+      if (target === 'library') {
+        return ($scope.libraryEdit && $scope.libraryEdit.steps) || []
+      }
+      return $scope.recordingSteps
+    }
+
+    function editBaselinesArray(target) {
+      if (target === 'library') {
+        return ($scope.libraryEdit && $scope.libraryEdit.baselinesMeta) || []
+      }
+      return $scope.recordingBaselinesMeta
+    }
+
+    $scope.openStepEditor = function(index, editTarget) {
+      editTarget = editTarget || 'recording'
+      if (editTarget === 'library' && !$scope.libraryEdit) {
+        return
+      }
+      var steps = editStepsArray(editTarget)
+      if (index < 0 || index >= steps.length) {
+        return
+      }
+      var step = steps[index]
+      var canEdit = editTarget === 'library'
+        ? $scope.canMutateLibraryStep(step)
+        : $scope.canMutateStep(step)
+      if (!canEdit) {
+        return
+      }
+      var action = String(step.action || '').trim()
+      var kind = null
+      var draft = {}
+      var actionLabel = action
+      function delaySecondsFromStep(st) {
+        var ms = Number(st && st.stepDelayMs)
+        if (isFinite(ms) && ms >= 0) {
+          return ms / 1000
+        }
+        return DEFAULT_STEP_DELAY_MS / 1000
+      }
+      if (action === 'tap') {
+        kind = 'tap'
+        draft = {
+          stepLabel: step.stepLabel || ''
+        , xP: Number(step.xP)
+        , yP: Number(step.yP)
+        , delaySeconds: delaySecondsFromStep(step)
+        }
+        actionLabel = 'tap'
+      }
+      else if (action === 'swipe') {
+        kind = 'swipe'
+        draft = {
+          stepLabel: step.stepLabel || ''
+        , x1P: Number(step.x1P)
+        , y1P: Number(step.y1P)
+        , x2P: Number(step.x2P)
+        , y2P: Number(step.y2P)
+        , durationMs: Number(step.durationMs) || 300
+        , delaySeconds: delaySecondsFromStep(step)
+        }
+        actionLabel = 'swipe'
+      }
+      else if (action === 'wait') {
+        kind = 'wait'
+        draft = {
+          stepLabel: step.stepLabel || ''
+        , waitSeconds: (Number(step.waitMs) || 0) / 1000
+        }
+        actionLabel = 'wait'
+      }
+      else if (action === 'assert_text_contains') {
+        kind = 'assert_text'
+        draft = {
+          stepLabel: step.stepLabel || ''
+        , expectedText: step.expectedText || ''
+        , delaySeconds: delaySecondsFromStep(step)
+        }
+        actionLabel = 'assert_text_contains'
+      }
+      else if (action === 'assert_visual_match') {
+        kind = 'assert_visual'
+        var vmeta = (editBaselinesArray(editTarget) || [])[step.baselineIndex]
+        var vth = vmeta && vmeta.threshold != null ? Number(vmeta.threshold) : 0.95
+        if (!isFinite(vth)) {
+          vth = 0.95
+        }
+        draft = {
+          stepLabel: step.stepLabel || ''
+        , baselineIndex: Number(step.baselineIndex) || 0
+        , threshold: vth
+        , delaySeconds: delaySecondsFromStep(step)
+        }
+        actionLabel = 'assert_visual_match'
+      }
+      else if (action === 'input_text') {
+        kind = 'input_text'
+        draft = {
+          stepLabel: step.stepLabel || ''
+        , xP: Number(step.xP)
+        , yP: Number(step.yP)
+        , inputText: step.inputText != null ? String(step.inputText) : ''
+        , delaySeconds: delaySecondsFromStep(step)
+        }
+        actionLabel = 'input_text'
+      }
+      else {
+        return
+      }
+      $scope.stepEdit = {
+        target: editTarget
+      , index: index
+      , kind: kind
+      , actionLabel: actionLabel
+      , draft: draft
+      }
+    }
+
+    $scope.saveStepEditor = function() {
+      var ed = $scope.stepEdit
+      if (!ed || ed.index == null) {
+        return
+      }
+      var target = ed.target || 'recording'
+      var steps = editStepsArray(target)
+      var step = steps[ed.index]
+      var mutOk = target === 'library'
+        ? $scope.canMutateLibraryStep(step)
+        : $scope.canMutateStep(step)
+      if (!step || !mutOk) {
+        $scope.stepEdit = null
+        return
+      }
+      var d = ed.draft || {}
+      step.stepLabel = String(d.stepLabel || '').trim()
+      if (ed.kind === 'tap') {
+        var nx = Number(d.xP)
+        var ny = Number(d.yP)
+        if (!isNaN(nx) && !isNaN(ny)) {
+          step.xP = nx
+          step.yP = ny
+        }
+      }
+      else if (ed.kind === 'swipe') {
+        var x1 = Number(d.x1P)
+        var y1 = Number(d.y1P)
+        var x2 = Number(d.x2P)
+        var y2 = Number(d.y2P)
+        var dur = Number(d.durationMs)
+        if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
+          step.x1P = x1
+          step.y1P = y1
+          step.x2P = x2
+          step.y2P = y2
+        }
+        if (isFinite(dur) && dur >= 50 && dur <= 8000) {
+          step.durationMs = Math.round(dur)
+        }
+      }
+      else if (ed.kind === 'wait') {
+        var sec = Number(d.waitSeconds)
+        if (isFinite(sec) && sec >= 0) {
+          step.waitMs = Math.round(sec * 1000)
+        }
+        delete step.stepDelayMs
+      }
+      else if (ed.kind === 'assert_text') {
+        step.expectedText = String(d.expectedText || '').trim()
+      }
+      else if (ed.kind === 'input_text') {
+        var ixp = Number(d.xP)
+        var iyp = Number(d.yP)
+        if (!isNaN(ixp) && !isNaN(iyp)) {
+          step.xP = ixp
+          step.yP = iyp
+        }
+        step.inputText = String(d.inputText != null ? d.inputText : '')
+      }
+      else if (ed.kind === 'assert_visual') {
+        var metaList = editBaselinesArray(target) || []
+        var bi0 = Number(d.baselineIndex)
+        if (isFinite(bi0) && bi0 >= 0 && metaList.length) {
+          var biClamped = Math.min(Math.floor(bi0), metaList.length - 1)
+          step.baselineIndex = biClamped
+        }
+        var vmeta = metaList[step.baselineIndex]
+        if (vmeta) {
+          var th = Number(d.threshold)
+          if (!isFinite(th) || th <= 0) {
+            th = 0.95
+          }
+          if (th > 1) {
+            th = 1
+          }
+          vmeta.threshold = th
+        }
+      }
+      if (ed.kind !== 'wait') {
+        var dsec = Number(d.delaySeconds)
+        if (!isFinite(dsec) || dsec < 0) {
+          dsec = DEFAULT_STEP_DELAY_MS / 1000
+        }
+        if (dsec > 120) {
+          dsec = 120
+        }
+        step.stepDelayMs = Math.round(dsec * 1000)
+      }
+      step.timestamp = Date.now()
+      $scope.stepEdit = null
+    }
+
+    $scope.cancelStepEditor = function() {
+      $scope.stepEdit = null
+    }
+
+    $scope.insertStepAfter = function(afterIndex, kind, ctx) {
+      ctx = ctx || 'recording'
+      if (ctx === 'recording') {
+        if (!$scope.recordingActive || $scope.recordingLocked) {
+          return
+        }
+      }
+      else if (ctx === 'library') {
+        if (!$scope.libraryEdit) {
+          return
+        }
+      }
+      else {
+        return
+      }
+      var steps = ctx === 'library' ? $scope.libraryEdit.steps : $scope.recordingSteps
+      if (afterIndex < 0 || afterIndex >= steps.length) {
+        return
+      }
+      var insertAt = afterIndex + 1
+      var step = null
+      if (kind === 'wait') {
+        step = {
+          _id: nextStepId()
+        , action: 'wait'
+        , waitMs: 1000
+        , timestamp: Date.now()
+        }
+      }
+      else if (kind === 'tap') {
+        step = {
+          _id: nextStepId()
+        , action: 'tap'
+        , xP: 0.5
+        , yP: 0.5
+        , stepDelayMs: DEFAULT_STEP_DELAY_MS
+        , timestamp: Date.now()
+        }
+      }
+      else if (kind === 'swipe') {
+        step = {
+          _id: nextStepId()
+        , action: 'swipe'
+        , x1P: 0.5
+        , y1P: 0.65
+        , x2P: 0.5
+        , y2P: 0.35
+        , durationMs: 400
+        , stepDelayMs: DEFAULT_STEP_DELAY_MS
+        , timestamp: Date.now()
+        }
+      }
+      else if (kind === 'assert_text') {
+        step = {
+          _id: nextStepId()
+        , action: 'assert_text_contains'
+        , expectedText: ''
+        , stepDelayMs: DEFAULT_STEP_DELAY_MS
+        , timestamp: Date.now()
+        }
+      }
+      if (!step) {
+        return
+      }
+      steps.splice(insertAt, 0, step)
+      $scope.$applyAsync(angular.noop)
+    }
+
+    $scope.insertInputTextAfter = function(afterIndex, ctx) {
+      ctx = ctx || 'recording'
+      if (ctx === 'recording') {
+        if (!$scope.recordingActive || $scope.recordingLocked) {
+          return
+        }
+      }
+      else if (ctx === 'library') {
+        if (!$scope.libraryEdit) {
+          return
+        }
+      }
+      else {
+        return
+      }
+      var steps = ctx === 'library' ? $scope.libraryEdit.steps : $scope.recordingSteps
+      if (afterIndex < 0 || afterIndex >= steps.length) {
+        return
+      }
+      var insertAt = afterIndex + 1
+      var prev = steps[afterIndex]
+      var xP = 0.5
+      var yP = 0.5
+      if (prev && String(prev.action || '').trim() === 'tap') {
+        xP = Number(prev.xP)
+        yP = Number(prev.yP)
+        if (isNaN(xP)) {
+          xP = 0.5
+        }
+        if (isNaN(yP)) {
+          yP = 0.5
+        }
+      }
+      var step = {
+        _id: nextStepId()
+      , action: 'input_text'
+      , xP: xP
+      , yP: yP
+      , inputText: ''
+      , stepDelayMs: DEFAULT_STEP_DELAY_MS
+      , timestamp: Date.now()
+      }
+      steps.splice(insertAt, 0, step)
+      $scope.openStepEditor(insertAt, ctx)
+      $scope.$applyAsync(angular.noop)
     }
 
     function buildStepsSummary(steps) {
@@ -287,6 +1181,10 @@ module.exports = angular.module('stf.automation.recorder', [
         if (action === 'tap') {
           return 'tap(' + step.xP + ',' + step.yP + ')'
         }
+        if (action === 'swipe') {
+          return 'swipe(' + step.x1P + ',' + step.y1P + '->' + step.x2P + ',' + step.y2P + ',' +
+            (step.durationMs != null ? step.durationMs : '') + 'ms)'
+        }
         if (action === 'assert_text_contains') {
           return 'assert_text_contains(' + (step.expectedText || '') + ')'
         }
@@ -295,6 +1193,9 @@ module.exports = angular.module('stf.automation.recorder', [
         }
         if (action === 'wait') {
           return 'wait(' + (step.waitMs != null ? step.waitMs : 0) + 'ms)'
+        }
+        if (action === 'input_text') {
+          return 'input_text(' + step.xP + ',' + step.yP + ',' + JSON.stringify(step.inputText || '') + ')'
         }
         return action
       }).join(' -> ')
@@ -354,7 +1255,7 @@ module.exports = angular.module('stf.automation.recorder', [
       stepSeq = 0
       $scope.recordingActive = true
       $scope.recordingLocked = false
-      $scope.recordingStepPage = 1
+      $scope.stepEdit = null
       $scope.recordingSteps = [{
         _id: nextStepId()
       , action: 'start'
@@ -376,32 +1277,45 @@ module.exports = angular.module('stf.automation.recorder', [
       , xP: Number(data.xP)
       , yP: Number(data.yP)
       , rotation: data.rotation
+      , stepDelayMs: DEFAULT_STEP_DELAY_MS
       , timestamp: data.timestamp || Date.now()
       })
       // touch handlers do not always enter an Angular digest; force table refresh.
       $scope.$applyAsync(angular.noop)
     })
 
-    function safeGetTargetSerial() {
-      if ($scope.device && $scope.device.serial) return $scope.device.serial
-      return null
-    }
-
-    $scope.addWaitStep = function() {
+    $scope.$on('stf.recorder.swipe', function(e, data) {
       if (!$scope.recordingActive) {
         return
       }
-      var s = Number($scope.waitStepSeconds)
-      if (!isFinite(s) || s <= 0) {
+      if (!data) {
         return
       }
-      var waitMs = Math.round(s * 1000)
+      var dur = Number(data.durationMs)
+      if (!isFinite(dur) || dur < 50) {
+        dur = 300
+      }
+      if (dur > 8000) {
+        dur = 8000
+      }
       $scope.recordingSteps.push({
         _id: nextStepId()
-      , action: 'wait'
-      , waitMs: waitMs
-      , timestamp: Date.now()
+      , action: 'swipe'
+      , x1P: Number(data.x1P)
+      , y1P: Number(data.y1P)
+      , x2P: Number(data.x2P)
+      , y2P: Number(data.y2P)
+      , rotation: data.rotation
+      , durationMs: Math.round(dur)
+      , stepDelayMs: DEFAULT_STEP_DELAY_MS
+      , timestamp: data.timestamp || Date.now()
       })
+      $scope.$applyAsync(angular.noop)
+    })
+
+    function safeGetTargetSerial() {
+      if ($scope.device && $scope.device.serial) return $scope.device.serial
+      return null
     }
 
     $scope.canMutateStep = function(step) {
@@ -412,105 +1326,71 @@ module.exports = angular.module('stf.automation.recorder', [
       return !$scope.recordingLocked && action !== 'start' && action !== 'stop'
     }
 
-    $scope.deleteStepAt = function(index) {
-      if (index < 0 || index >= $scope.recordingSteps.length) {
-        return
+    $scope.canMutateLibraryStep = function(step) {
+      if (!step || !step.action) {
+        return false
       }
-      var step = $scope.recordingSteps[index]
-      if (!$scope.canMutateStep(step)) {
-        return
-      }
-      $scope.recordingSteps.splice(index, 1)
+      var action = String(step.action).trim()
+      return action !== 'start' && action !== 'stop'
     }
 
-    $scope.editStepAt = function(index) {
-      if (index < 0 || index >= $scope.recordingSteps.length) {
+    $scope.deleteStepAt = function(index, ctx) {
+      ctx = ctx || 'recording'
+      var steps = ctx === 'library' ? (($scope.libraryEdit && $scope.libraryEdit.steps) || []) : $scope.recordingSteps
+      if (index < 0 || index >= steps.length) {
         return
       }
-      var step = $scope.recordingSteps[index]
-      if (!$scope.canMutateStep(step)) {
+      var step = steps[index]
+      var ok = ctx === 'library' ? $scope.canMutateLibraryStep(step) : $scope.canMutateStep(step)
+      if (!ok) {
         return
       }
-      var action = String(step.action || '').trim()
-
-      if (action === 'tap') {
-        var xText = $window.prompt('请输入 tap 的 x 百分比(0~1)', String(step.xP))
-        if (xText == null) return
-        var yText = $window.prompt('请输入 tap 的 y 百分比(0~1)', String(step.yP))
-        if (yText == null) return
-        var nx = Number(xText)
-        var ny = Number(yText)
-        if (isNaN(nx) || isNaN(ny)) {
-          return
-        }
-        step.xP = nx
-        step.yP = ny
-        step.timestamp = Date.now()
-        return
+      steps.splice(index, 1)
+      if ($scope.stepEdit && $scope.stepEdit.target === ctx && $scope.stepEdit.index === index) {
+        $scope.stepEdit = null
       }
-
-      if (action === 'wait') {
-        var secText = $window.prompt('请输入等待秒数(>=0)', String((Number(step.waitMs) || 0) / 1000))
-        if (secText == null) return
-        var sec = Number(secText)
-        if (!isFinite(sec) || sec < 0) {
-          return
-        }
-        step.waitMs = Math.round(sec * 1000)
-        step.timestamp = Date.now()
-        return
-      }
-
-      if (action === 'assert_text_contains') {
-        var expected = $window.prompt('请输入文本断言期望值', String(step.expectedText || ''))
-        if (expected == null) return
-        step.expectedText = String(expected).trim()
-        step.timestamp = Date.now()
-        return
-      }
-
-      if (action === 'assert_visual_match') {
-        var idxText = $window.prompt('请输入 baselineIndex(从0开始)', String(step.baselineIndex))
-        if (idxText == null) return
-        var bi = Number(idxText)
-        if (!isFinite(bi) || bi < 0) {
-          return
-        }
-        step.baselineIndex = Math.floor(bi)
-        step.timestamp = Date.now()
+      else if ($scope.stepEdit && $scope.stepEdit.target === ctx && $scope.stepEdit.index > index) {
+        $scope.stepEdit.index -= 1
       }
     }
 
-    $scope.addTextAssertion = function() {
-      var expectedText = ($scope.assertionDraft.expectedText || '').trim()
-      if (!expectedText) {
-        return
-      }
-      $scope.recordingError = ''
-      $scope.recordingSteps.push({
-        _id: nextStepId()
-      , action: 'assert_text_contains'
-      , expectedText: expectedText
-      , timestamp: Date.now()
-      })
-    }
-
-    function pushVisualBaselineStep(href) {
+    function pushVisualBaselineStepAt(href, afterIndex, threshold, ctx) {
+      ctx = ctx || 'recording'
       if (!href) {
         throw new Error('基线截图无href返回')
+      }
+      var th = Number(threshold)
+      if (!isFinite(th) || th <= 0) {
+        th = 0.95
+      }
+      if (th > 1) {
+        th = 1
       }
       var baseline = {
         type: 'visual'
       , href: href
-      , threshold: Number($scope.assertionDraft.threshold) || 0.95
+      , threshold: th
       }
-      $scope.recordingBaselinesMeta.push(baseline)
-      $scope.recordingSteps.push({
+      var baselines = ctx === 'library'
+        ? ($scope.libraryEdit && $scope.libraryEdit.baselinesMeta)
+        : $scope.recordingBaselinesMeta
+      var steps = ctx === 'library'
+        ? ($scope.libraryEdit && $scope.libraryEdit.steps)
+        : $scope.recordingSteps
+      if (!baselines || !steps) {
+        throw new Error('基线上下文无效')
+      }
+      baselines.push(baseline)
+      var baselineIndex = baselines.length - 1
+      var step = {
         _id: nextStepId()
       , action: 'assert_visual_match'
-      , baselineIndex: $scope.recordingBaselinesMeta.length - 1
+      , baselineIndex: baselineIndex
+      , stepDelayMs: DEFAULT_STEP_DELAY_MS
       , timestamp: Date.now()
-      })
+      }
+      var insertAt = afterIndex + 1
+      steps.splice(insertAt, 0, step)
     }
 
     function captureBaselineFromPreviewCanvas() {
@@ -545,15 +1425,38 @@ module.exports = angular.module('stf.automation.recorder', [
       })
     }
 
-    $scope.captureVisualBaseline = function() {
+    $scope.insertVisualAssertionAfter = function(afterIndex, ctx) {
+      ctx = ctx || 'recording'
+      if (ctx === 'recording') {
+        if (!$scope.recordingActive || $scope.recordingLocked) {
+          return
+        }
+      }
+      else if (ctx === 'library') {
+        if (!$scope.libraryEdit) {
+          return
+        }
+      }
+      else {
+        return
+      }
+      var steps = ctx === 'library' ? $scope.libraryEdit.steps : $scope.recordingSteps
+      if (afterIndex < 0 || afterIndex >= steps.length) {
+        return
+      }
       if ($scope.baselineBusy) {
         return
       }
-      $scope.recordingError = ''
+      if (ctx === 'recording') {
+        $scope.recordingError = ''
+      }
+      else if ($scope.libraryEdit) {
+        $scope.libraryEdit.captureError = ''
+      }
       $scope.baselineBusy = true
       captureBaselineFromPreviewCanvas()
         .then(function(href) {
-          pushVisualBaselineStep(href)
+          pushVisualBaselineStepAt(href, afterIndex, 0.95, ctx)
         })
         .catch(function() {
           var ctrl = resolveControl()
@@ -562,14 +1465,214 @@ module.exports = angular.module('stf.automation.recorder', [
           }
           return ctrl.screenshot().then(function(result) {
             var href = result && result.body ? result.body.href : null
-            pushVisualBaselineStep(href)
+            pushVisualBaselineStepAt(href, afterIndex, 0.95, ctx)
           })
         })
         .catch(function(err) {
-          $scope.recordingError = (err && err.message) ? err.message : '拍摄基线失败'
+          var msg = (err && err.message) ? err.message : '拍摄基线失败'
+          if (ctx === 'recording') {
+            $scope.recordingError = msg
+          }
+          else if ($scope.libraryEdit) {
+            $scope.libraryEdit.captureError = msg
+          }
         })
         .finally(function() {
           $scope.baselineBusy = false
+          $scope.$applyAsync(angular.noop)
+        })
+    }
+
+    function buildPythonCodeFromSteps(steps) {
+      function escapePyString(s) {
+        return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+      }
+      var py = []
+      py.push('import uiautomator2 as u2')
+      py.push('import time')
+      py.push('d = u2.connect()')
+      py.push('w, h = d.window_size()')
+      py.push('')
+      py.push('def tap(xp, yp):')
+      py.push('    x = int(w * float(xp))')
+      py.push('    y = int(h * float(yp))')
+      py.push('    d.click(x, y)')
+      py.push('')
+      py.push('def swipe(x1p, y1p, x2p, y2p, duration_ms=300):')
+      py.push('    x1, y1 = int(w * float(x1p)), int(h * float(y1p))')
+      py.push('    x2, y2 = int(w * float(x2p)), int(h * float(y2p))')
+      py.push('    d.swipe(x1, y1, x2, y2, float(duration_ms) / 1000.0)')
+      py.push('')
+      py.push('def type_at(xp, yp, s):')
+      py.push('    tap(xp, yp)')
+      py.push('    time.sleep(0.38)')
+      py.push('    d.set_fastinput_ime(True)')
+      py.push('    d.send_keys(str(s))')
+      py.push('')
+      py.push('# generated by STF recorder')
+      py.push('print("replay started")')
+      py.push('')
+      var pyTimeImported = true
+      function codegenPreDelayMs(st) {
+        var a = String(st && st.action || '').trim()
+        if (a !== 'tap' && a !== 'swipe' && a !== 'input_text' &&
+          a !== 'assert_text_contains' && a !== 'assert_visual_match') {
+          return 0
+        }
+        var ms = Number(st.stepDelayMs)
+        if (!isFinite(ms) || ms < 0) {
+          ms = DEFAULT_STEP_DELAY_MS
+        }
+        if (ms > 120000) {
+          ms = 120000
+        }
+        return ms
+      }
+      function pushPySleep(ms) {
+        if (!(ms > 0)) {
+          return
+        }
+        if (!pyTimeImported) {
+          py.push('import time')
+          pyTimeImported = true
+        }
+        py.push('time.sleep(' + (ms / 1000).toFixed(3) + ')')
+      }
+      ;(steps || []).forEach(function(step) {
+        if (!step || !step.action) return
+        if (step.action === 'tap') {
+          pushPySleep(codegenPreDelayMs(step))
+          py.push('tap(' + Number(step.xP || 0).toFixed(6) + ', ' + Number(step.yP || 0).toFixed(6) + ')')
+        }
+        else if (step.action === 'swipe') {
+          pushPySleep(codegenPreDelayMs(step))
+          py.push('swipe(' +
+            Number(step.x1P || 0).toFixed(6) + ', ' +
+            Number(step.y1P || 0).toFixed(6) + ', ' +
+            Number(step.x2P || 0).toFixed(6) + ', ' +
+            Number(step.y2P || 0).toFixed(6) + ', ' +
+            Math.round(Number(step.durationMs) || 300) + ')')
+        }
+        else if (step.action === 'input_text') {
+          pushPySleep(codegenPreDelayMs(step))
+          var it = escapePyString(step.inputText || '')
+          py.push('type_at(' + Number(step.xP || 0).toFixed(6) + ', ' + Number(step.yP || 0).toFixed(6) +
+            ', \'' + it + '\')')
+        }
+        else if (step.action === 'assert_text_contains') {
+          pushPySleep(codegenPreDelayMs(step))
+          var expected = escapePyString(step.expectedText)
+          py.push('assert d(text=\'' + expected + '\').exists, ' +
+            '\'text assertion failed: expected: ' + expected + '\'')
+        }
+        else if (step.action === 'assert_visual_match') {
+          pushPySleep(codegenPreDelayMs(step))
+          py.push('# visual assertion placeholder (baselineIndex=' + Number(step.baselineIndex) + ')')
+        }
+        else if (step.action === 'wait') {
+          var wms = Number(step.waitMs || 0)
+          if (!pyTimeImported) {
+            py.push('import time')
+            pyTimeImported = true
+          }
+          py.push('time.sleep(' + (wms / 1000).toFixed(3) + ')')
+        }
+      })
+      return py.join('\n')
+    }
+
+    function stepsJsonForApi(steps) {
+      return (steps || []).map(function(s) {
+        var o = angular.extend({}, s)
+        delete o._id
+        return o
+      })
+    }
+
+    $scope.closeLibraryEditor = function() {
+      if ($scope.stepEdit && $scope.stepEdit.target === 'library') {
+        $scope.stepEdit = null
+      }
+      $scope.draggingStepIndex = null
+      $scope.dropTargetStepIndex = null
+      $scope.dragStepContext = null
+      $scope.libraryEdit = null
+    }
+
+    $scope.openSelectedRecordingForEdit = function(id) {
+      id = id != null ? String(id).trim() : ''
+      if (!id) {
+        return
+      }
+      $scope.replayState.launching = true
+      return $http.get('/api/v1/automation/recordings/' + encodeURIComponent(id))
+        .then(function(res) {
+          var rec = res.data && res.data.recording
+          if (!rec || rec.id !== id) {
+            throw new Error('录制不存在')
+          }
+          var steps = angular.copy(rec.stepsJson || [])
+          angular.forEach(steps, function(s) {
+            if (s && !s._id) {
+              s._id = nextStepId()
+            }
+          })
+          $scope.libraryEdit = {
+            id: rec.id
+          , name: (rec.name != null ? String(rec.name) : '').trim()
+          , description: rec.description != null ? String(rec.description) : ''
+          , steps: steps
+          , baselinesMeta: angular.copy(rec.baselinesMeta || [])
+          , saving: false
+          , saveError: ''
+          , captureError: ''
+          }
+          $scope.stepEdit = null
+        })
+        .catch(function(err) {
+          $window.alert(err && err.message ? err.message : '加载失败')
+        })
+        .finally(function() {
+          $scope.replayState.launching = false
+        })
+    }
+
+    $scope.saveLibraryRecording = function() {
+      var le = $scope.libraryEdit
+      if (!le || !le.id) {
+        return
+      }
+      var nm = String(le.name || '').trim()
+      if (!nm) {
+        le.saveError = '请填写录制名称'
+        return
+      }
+      le.saving = true
+      le.saveError = ''
+      var py = buildPythonCodeFromSteps(le.steps)
+      $http.put('/api/v1/automation/recordings/' + encodeURIComponent(le.id), {
+        name: nm
+      , description: le.description != null ? String(le.description) : ''
+      , stepsJson: stepsJsonForApi(le.steps)
+      , baselinesMeta: le.baselinesMeta
+      , pythonCode: py
+      })
+        .then(function() {
+          loadRecordings()
+          $scope.closeLibraryEditor()
+        })
+        .catch(function(err) {
+          var code = err && err.status
+          var desc = err && err.data && err.data.description
+          if (code === 409) {
+            le.saveError = desc || '名称已存在'
+          }
+          else {
+            le.saveError = desc || (err && err.message) || '保存失败'
+          }
+        })
+        .finally(function() {
+          le.saving = false
         })
     }
 
@@ -581,44 +1684,7 @@ module.exports = angular.module('stf.automation.recorder', [
       , action: 'stop'
       , timestamp: Date.now()
       })
-      // Generate a python script that reflects recorded steps (mainly taps + text assertions).
-      // This is used for download/debug; actual device-side execution is handled by STF in the browser.
-      function escapePyString(s) {
-        return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
-      }
-      var py = []
-      py.push('import uiautomator2 as u2')
-      py.push('d = u2.connect()')
-      py.push('w, h = d.window_size()')
-      py.push('')
-      py.push('def tap(xp, yp):')
-      py.push('    x = int(w * float(xp))')
-      py.push('    y = int(h * float(yp))')
-      py.push('    d.click(x, y)')
-      py.push('')
-      py.push('# generated by STF recorder')
-      py.push('print("replay started")')
-      py.push('')
-      ;( $scope.recordingSteps || []).forEach(function(step) {
-        if (!step || !step.action) return
-        if (step.action === 'tap') {
-          py.push('tap(' + Number(step.xP || 0).toFixed(6) + ', ' + Number(step.yP || 0).toFixed(6) + ')')
-        }
-        else if (step.action === 'assert_text_contains') {
-          var expected = escapePyString(step.expectedText)
-          py.push('assert d(text=\'' + expected + '\').exists, ' +
-            '\'text assertion failed: expected: ' + expected + '\'')
-        }
-        else if (step.action === 'assert_visual_match') {
-          py.push('# visual assertion placeholder (baselineIndex=' + Number(step.baselineIndex) + ')')
-        }
-        else if (step.action === 'wait') {
-          var ms = Number(step.waitMs || 0)
-          py.push('import time')
-          py.push('time.sleep(' + (ms / 1000).toFixed(3) + ')')
-        }
-      })
-      var pythonCode = py.join('\n')
+      var pythonCode = buildPythonCodeFromSteps($scope.recordingSteps)
       $http.post('/api/v1/automation/recordings', {
         name: $scope.recordingForm.name
       , stepsJson: $scope.recordingSteps
@@ -758,7 +1824,7 @@ module.exports = angular.module('stf.automation.recorder', [
       , passRate: passRate
       , started: run.startedAt || run.createdAt || ''
       , ended: run.endedAt || ''
-      , downloadUrl: '/api/v1/automation/replay/runs/' + run.id + '/csv'
+      , downloadUrl: '/api/v1/automation/replay/runs/' + run.id + '/test-report'
       }
       // This is a "current session" view: keep only the latest replay row.
       $scope.detailReplayRows = [row]
@@ -844,16 +1910,23 @@ module.exports = angular.module('stf.automation.recorder', [
             successCases = Math.max(0, Math.floor(Number(successCases) || 0))
             var errorStr = errorMsg ? String(errorMsg) : ''
 
+            var devPayload = {
+              serial: serial
+            , status: 'finished'
+            , result: deviceResult
+            , totalCases: totalCases
+            , successCases: successCases
+            , error: errorStr
+            , endedAt: endedAtIso
+            }
+            if (result.cases && result.cases.logLines && result.cases.logLines.length) {
+              devPayload.executionLog = result.cases.logLines.join('\n')
+            }
+            if (result.cases && result.cases.reportArtifacts && result.cases.reportArtifacts.length) {
+              devPayload.reportArtifacts = result.cases.reportArtifacts
+            }
             return $http.post('/api/v1/automation/replay/runs/' + encodeURIComponent(runId) + '/complete', {
-              devices: [{
-                serial: serial
-              , status: 'finished'
-              , result: deviceResult
-              , totalCases: totalCases
-              , successCases: successCases
-              , error: errorStr
-              , endedAt: endedAtIso
-              }]
+              devices: [devPayload]
             }, {headers: {'Content-Type': 'application/json'}})
               .catch(function() {
                 // If server completion fails, still show local error.
