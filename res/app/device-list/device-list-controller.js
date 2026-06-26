@@ -209,6 +209,7 @@ module.exports = function DeviceListCtrl(
   , bulkShell: false
   , bulkMonkey: false
   , bulkReplay: false
+  , bulkExplorer: false
   }
 
   $scope.batchSelection = {
@@ -267,6 +268,7 @@ module.exports = function DeviceListCtrl(
   , 'bulkShell'
   , 'bulkMonkey'
   , 'bulkReplay'
+  , 'bulkExplorer'
   ]
 
   $scope.activateBulkTab = function(name) {

@@ -1473,6 +1473,245 @@ paths:
                 type: boolean
       security:
         - accessTokenAuth: []
+  /automation/explorer/runs:
+    x-swagger-router-controller: automation
+    get:
+      summary: List explorer runs
+      operationId: listExplorerRuns
+      tags:
+        - user
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          default: 20
+        - name: createdBy
+          in: query
+          required: false
+          type: string
+        - name: packageName
+          in: query
+          required: false
+          type: string
+        - name: source
+          in: query
+          required: false
+          type: string
+      responses:
+        "200":
+          description: Explorer runs
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              total:
+                type: integer
+              runs:
+                type: array
+                items:
+                  type: object
+      security:
+        - accessTokenAuth: []
+    post:
+      summary: Create explorer run
+      operationId: createExplorerRun
+      tags:
+        - user
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [packageName, targets]
+            properties:
+              packageName:
+                type: string
+              targets:
+                type: array
+                items:
+                  type: string
+              maxSteps:
+                type: integer
+              maxMinutes:
+                type: integer
+              maxTriesPerDoor:
+                type: integer
+              includeRisky:
+                type: boolean
+              stuckThreshold:
+                type: integer
+              errorKeywords:
+                type: array
+                items:
+                  type: string
+              captureEverySteps:
+                type: integer
+      responses:
+        "201":
+          description: Explorer run created
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              run:
+                type: object
+      security:
+        - accessTokenAuth: []
+  /automation/explorer/runs/{runId}/report:
+    x-swagger-router-controller: automation
+    get:
+      summary: Get explorer report JSON
+      operationId: getExplorerRunReport
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Explorer report
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              run:
+                type: object
+              devices:
+                type: array
+                items:
+                  type: object
+      security:
+        - accessTokenAuth: []
+  /automation/explorer/runs/{runId}/test-report:
+    x-swagger-router-controller: automation
+    get:
+      summary: Download explorer HTML test report
+      operationId: downloadExplorerTestReport
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: HTML report
+      security:
+        - accessTokenAuth: []
+  /automation/explorer/runs/{runId}/convert-recording:
+    x-swagger-router-controller: automation
+    post:
+      summary: Convert explorer path to a recording
+      operationId: convertExplorerToRecording
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [serial]
+            properties:
+              serial:
+                type: string
+              name:
+                type: string
+      responses:
+        "201":
+          description: Recording created
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              recording:
+                type: object
+      security:
+        - accessTokenAuth: []
+  /automation/explorer/runs/{runId}/stop:
+    x-swagger-router-controller: automation
+    post:
+      summary: Stop a running explorer run
+      operationId: stopExplorerRun
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Run marked as stopping
+      security:
+        - accessTokenAuth: []
+  /automation/explorer/runs/{runId}/progress:
+    x-swagger-router-controller: automation
+    get:
+      summary: Get explorer run progress
+      operationId: getExplorerRunProgress
+      tags:
+        - user
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Explorer run progress
+      security:
+        - accessTokenAuth: []
+  /automation/explorer/memory:
+    x-swagger-router-controller: automation
+    get:
+      summary: Get last explorer memory for continue exploration
+      operationId: getExplorerLastMemory
+      tags:
+        - user
+      parameters:
+        - name: packageName
+          in: query
+          required: true
+          type: string
+        - name: serial
+          in: query
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Explorer memory data
+          schema:
+            type: object
+            properties:
+              hasMemory:
+                type: boolean
+              memory:
+                type: object
+              runId:
+                type: string
+              createdAt:
+                type: string
+      security:
+        - accessTokenAuth: []
   /users/{email}/groupsQuotas:
     x-swagger-router-controller: users
     put:

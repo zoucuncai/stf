@@ -1,0 +1,94 @@
+.bulk-action-panel
+  .heading
+    i.fa.fa-compass
+    span(translate) 批量探索测试
+  .widget-content.padded
+    .form-inline.m-b-sm
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='all')
+        | 全部可用设备
+      label.radio-inline
+        input(type='radio' ng-model='batchSelection.mode' value='selected')
+        | 勾选设备
+    device-list-bulk-device-table
+
+    .form-inline.m-t-sm
+      .form-group
+        input.form-control.input-sm.bulk-explorer-package-input(type='text' ng-model='explorerPackage' placeholder='包名，例如 com.example.app')
+      .form-group
+        input.form-control.input-sm(type='text' ng-model='explorerAccount' placeholder='账号(可选)' style='width:120px')
+      .form-group
+        input.form-control.input-sm(type='text' ng-model='explorerPassword' placeholder='密码(可选)' style='width:120px')
+      .form-group
+        input.form-control.input-sm(type='number' min='1' max='500' ng-model='explorerMaxSteps' placeholder='最大步数' style='width:90px')
+      .form-group
+        input.form-control.input-sm(type='number' min='1' max='60' ng-model='explorerMaxMinutes' placeholder='时长(min)' style='width:90px')
+      .form-group
+        input.form-control.input-sm(type='number' min='1' max='5' ng-model='explorerMaxTriesPerDoor' placeholder='每门尝试' style='width:90px')
+      .form-group
+        label.checkbox-inline
+          input(type='checkbox' ng-model='explorerIncludeRisky')
+          | 包含风险操作
+      .form-group
+        label.checkbox-inline
+          input(type='checkbox' ng-model='explorerSkipLaunch')
+          | 跳过启动(已登录)
+    .form-group.m-t-xs
+      label 预置步骤(JSON，可选 - 登录前执行)
+      textarea.form-control.input-sm(rows='3' ng-model='explorerPreStepsJson' placeholder='[例] [{"action":"tap","x":500,"y":800,"description":"点击设置"},{"action":"clearAndInput","x":300,"y":150,"text":"10.110.32.157","description":"填写IP"}]' style='width:100%; font-size:12px; font-family:monospace')
+    .m-t-xs
+      button.btn.btn-sm.btn-primary(ng-click='startExplorerRun()' ng-disabled='explorerRunning || !explorerPackage')
+        span(translate) 开始探索
+      button.btn.btn-sm.btn-warning.m-l-xs(ng-click='stopExplorerRun()' ng-disabled='!explorerRunning')
+        span(translate) 停止
+
+    .m-t-xs.text-danger(ng-if='explorerError') {{explorerError}}
+
+    .bulk-explorer-progress(ng-if='explorerRunning && explorerCurrentRun')
+      span 执行中... 页面: {{explorerCurrentRun.totalPages || 0}} | 步数: {{explorerCurrentRun.totalSteps || 0}} | 问题: {{explorerCurrentRun.totalIssues || 0}}
+
+    .m-t-sm(ng-if='explorerDevices.length && explorerRunning')
+      h5 设备实时进度
+      table.table.table-condensed.table-striped
+        thead
+          tr
+            th 设备
+            th 当前Activity
+            th 步数
+            th 页面
+            th Crash
+            th ANR
+            th 关键字
+        tbody
+          tr(ng-repeat='dev in explorerDevices track by dev.serial')
+            td {{dev.serial}}
+            td {{dev.currentActivity || '-'}}
+            td {{dev.stepsExecuted || 0}}
+            td {{dev.pagesDiscovered || 0}}
+            td.text-danger {{dev.crashCount || 0}}
+            td.text-danger {{dev.anrCount || 0}}
+            td.text-danger {{dev.errorKeywordCount || 0}}
+
+    .m-t-sm(ng-if='explorerRunningRuns.length')
+      table.table.table-condensed
+        thead
+          tr
+            th Run ID
+            th 包名
+            th 设备数
+            th 页面
+            th 步数
+            th 问题
+            th 状态
+            th 开始时间
+        tbody
+          tr(ng-repeat='run in explorerRunningRuns track by run.id')
+            td {{run.id.slice(0,8)}}
+            td {{run.packageName}}
+            td {{run.totalDevices || run.targets.length}}
+            td {{run.totalPages || 0}}
+            td {{run.totalSteps || 0}}
+            td
+              span(ng-class="{'text-danger': run.totalIssues > 0}") {{run.totalIssues || 0}}
+            td 执行中
+            td {{run.startedAt || run.createdAt}}

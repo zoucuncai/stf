@@ -72,6 +72,10 @@
                 a(href='#' ng-click='activateBulkTab("bulkReplay"); $event.preventDefault()')
                   i.fa.fa-play
                   span(translate) 批量回放
+              li(ng-class='{active: activeTabs.bulkExplorer}')
+                a(href='#' ng-click='activateBulkTab("bulkExplorer"); $event.preventDefault()')
+                  i.fa.fa-compass
+                  span(translate) 批量探索测试
 
             .device-list-bulk-panels.padded
               device-list-bulk-clear-cache(ng-if='activeTabs.bulkClearCache')
@@ -82,7 +86,8 @@
               device-list-bulk-shell(ng-if='activeTabs.bulkShell')
               device-list-bulk-monkey(ng-if='activeTabs.bulkMonkey')
               device-list-bulk-replay(ng-if='activeTabs.bulkReplay')
-              p.text-muted(ng-if='!activeTabs.bulkClearCache && !activeTabs.bulkInstall && !activeTabs.bulkUninstall && !activeTabs.bulkPush && !activeTabs.bulkReboot && !activeTabs.bulkShell && !activeTabs.bulkMonkey && !activeTabs.bulkReplay')
+              device-list-bulk-explorer(ng-if='activeTabs.bulkExplorer')
+              p.text-muted(ng-if='!activeTabs.bulkClearCache && !activeTabs.bulkInstall && !activeTabs.bulkUninstall && !activeTabs.bulkPush && !activeTabs.bulkReboot && !activeTabs.bulkShell && !activeTabs.bulkMonkey && !activeTabs.bulkReplay && !activeTabs.bulkExplorer')
                 | 点击上方批量操作标签以展开功能
 
             uib-tabset.overflow-auto.device-list-main-tabs-row

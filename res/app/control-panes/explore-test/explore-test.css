@@ -1,0 +1,57 @@
+.explore-test-panel .section-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.explore-test-panel .form-group {
+  margin-right: 10px;
+  margin-bottom: 8px;
+}
+
+.explore-test-panel .progress-area {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.explore-test-panel .log-area {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 12px;
+  font-family: monospace;
+  background: #222;
+  color: #0f0;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.explore-test-panel .errors-area {
+  margin-top: 12px;
+  padding: 10px;
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.explore-test-panel .errors-area h5 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.explore-test-panel .error-item {
+  padding: 4px 0;
+  border-bottom: 1px solid #fee2e2;
+}
+
+.explore-test-panel .error-item:last-child {
+  border-bottom: none;
+}
+
+.explore-test-panel .error-item p {
+  margin: 2px 0 0;
+  word-break: break-all;
+}

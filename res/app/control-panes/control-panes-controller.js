@@ -15,9 +15,15 @@ module.exports =
         filters: ['native', 'web']
       },
       {
-        title: gettext('Automation'),
+        title: gettext('录制回放'),
         icon: 'fa-road color-lila',
         templateUrl: 'control-panes/automation/automation.pug',
+        filters: ['native', 'web']
+      },
+      {
+        title: gettext('探索测试'),
+        icon: 'fa-compass color-green',
+        templateUrl: 'control-panes/explore-test/explore-test.pug',
         filters: ['native', 'web']
       },
       {

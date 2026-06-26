@@ -31,7 +31,7 @@ module.exports = angular.module('device-list.automation-records', [])
       return s || ''
     }
 
-    function buildMerged(monkeyRuns, replayRuns) {
+    function buildMerged(monkeyRuns, replayRuns, explorerRuns) {
       var rows = []
       ;(monkeyRuns || []).forEach(function(run) {
         var done = Number(run.progressDone || 0)
@@ -75,6 +75,29 @@ module.exports = angular.module('device-list.automation-records', [])
         , started: run.startedAt || run.createdAt || ''
         , ended: run.endedAt || ''
         , downloadUrl: '/api/v1/automation/replay/runs/' + run.id + '/test-report'
+        })
+      })
+      ;(explorerRuns || []).forEach(function(run) {
+        var totalSteps = Number(run.totalSteps || 0)
+        var totalIssues = Number(run.totalIssues || 0)
+        var successSteps = Math.max(0, totalSteps - totalIssues)
+        var passRate = totalSteps > 0 ? Math.round((successSteps / totalSteps) * 10000) / 100 : 0
+        rows.push({
+          kind: 'explorer'
+        , kindLabel: '探索测试'
+        , _track: 'e:' + run.id
+        , id: run.id
+        , title: run.packageName || ''
+        , params: '步数:' + totalSteps + ' 页面:' + (run.totalPages || 0)
+        , owner: run.createdByName || run.createdByEmail || ''
+        , statusText: statusLabel(run.status)
+        , progressText: (run.targets ? run.targets.length : 1) + ' / ' + (run.targets ? run.targets.length : 1)
+        , successCount: successSteps
+        , failCount: totalIssues
+        , passRate: passRate
+        , started: run.startedAt || run.createdAt || ''
+        , ended: run.endedAt || ''
+        , downloadUrl: '/api/v1/automation/explorer/runs/' + run.id + '/test-report'
         })
       })
       rows.sort(function(a, b) {
@@ -143,7 +166,9 @@ module.exports = angular.module('device-list.automation-records', [])
       return $http.get('/api/v1/automation/monkey/runs', {params: {page: 1, pageSize: 500}})
         .then(function(mRes) {
           return $http.get('/api/v1/automation/replay/runs').then(function(rRes) {
-            buildMerged(mRes.data.runs || [], rRes.data.runs || [])
+            return $http.get('/api/v1/automation/explorer/runs', {params: {page: 1, pageSize: 500}}).then(function(eRes) {
+              buildMerged(mRes.data.runs || [], rRes.data.runs || [], eRes.data.runs || [])
+            })
           })
         })
         .finally(function() {

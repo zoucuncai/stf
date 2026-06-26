@@ -1,0 +1,14 @@
+.bulk-explorer-package-input {
+  width: 260px;
+}
+
+.bulk-explorer-progress {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #888;
+}
+
+.bulk-explorer-progress .progress-bar {
+  min-width: 2em;
+  transition: width 0.4s ease;
+}

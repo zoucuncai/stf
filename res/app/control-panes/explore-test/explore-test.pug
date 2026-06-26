@@ -1,0 +1,65 @@
+.row.explore-test-panel(ng-controller='ExploreTestCtrl')
+  .col-md-12
+    h4.section-title
+      i.fa.fa-compass
+      |  探索测试（当前设备）
+
+    .form-inline
+      .form-group
+        input.form-control.input-sm(type='text' ng-model='etPackage' placeholder='包名，例如 com.example.app' style='width:260px' ng-blur='checkLastMemory()')
+      .form-group
+        input.form-control.input-sm(type='number' min='1' max='500' ng-model='etMaxSteps' placeholder='最大步数' style='width:90px')
+      .form-group
+        input.form-control.input-sm(type='number' min='1' max='60' ng-model='etMaxMinutes' placeholder='时长(min)' style='width:90px')
+      .form-group
+        input.form-control.input-sm(type='number' min='1' max='5' ng-model='etMaxTriesPerDoor' placeholder='每门尝试' style='width:90px')
+      .form-group
+        label.checkbox-inline
+          input(type='checkbox' ng-model='etIncludeRisky')
+          | 包含风险操作
+
+    .m-t-sm
+      button.btn.btn-sm.btn-success(ng-click='startExploreTest(false)' ng-disabled='etRunning')
+        i.fa.fa-play
+        |  开始探索
+      button.btn.btn-sm.btn-info.m-l-sm(ng-click='startExploreTest(true)' ng-disabled='etRunning || !etHasMemory')
+        i.fa.fa-history
+        |  继续上次探索
+      button.btn.btn-sm.btn-danger.m-l-sm(ng-click='stopExploreTest()' ng-disabled='!etRunning')
+        i.fa.fa-stop
+        |  停止
+      span.text-muted.m-l-sm(ng-if='etRunning')
+        i.fa.fa-spinner.fa-spin
+        |  正在探索…
+      span.text-success.m-l-sm.small(ng-if='etHasMemory && !etRunning') {{etMemoryInfo}}
+      span.text-muted.m-l-sm.small(ng-if='!etHasMemory && !etRunning && etPackage') 暂无历史记忆
+
+    .progress-area(ng-if='etRunId')
+      p
+        strong 运行ID：
+        span.selectable {{etRunId}}
+      p
+        strong 状态：
+        span {{etStatus}}
+      p(ng-if='etSteps > 0')
+        strong 已执行步数：
+        span {{etSteps}}
+      p(ng-if='etPages > 0')
+        strong 已发现页面：
+        span {{etPages}}
+      p(ng-if='etIssues > 0')
+        strong 问题数：
+        span.text-danger {{etIssues}}
+
+    .errors-area(ng-if='etErrors.length')
+      h5.text-danger
+        i.fa.fa-exclamation-triangle
+        |  失败明细 ({{etErrors.length}})
+      .error-item(ng-repeat='err in etErrors track by $index')
+        span.label.label-danger {{err.code}}
+        span.m-l-xs(ng-if='err.step !== null') 第 {{err.step}} 步
+        span.m-l-xs(ng-if='err.activity')  ({{err.activity}})
+        p.text-muted.small {{err.detail}}
+
+    .log-area(ng-if='etLogs.length')
+      div(ng-repeat='line in etLogs track by $index') {{line}}

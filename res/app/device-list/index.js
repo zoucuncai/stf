@@ -22,7 +22,8 @@ module.exports = angular.module('device-list', [
   require('./bulk-reboot').name,
   require('./bulk-shell').name,
   require('./bulk-monkey').name,
-  require('./bulk-replay').name
+  require('./bulk-replay').name,
+  require('./bulk-explorer').name
 , require('./automation-records').name
 ])
   .config(['$routeProvider', function($routeProvider) {
