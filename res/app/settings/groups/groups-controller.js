@@ -420,8 +420,8 @@ module.exports = function GroupsCtrl(
   , source: 'groupDeviceData'
   , defaultValue: $scope.defaultDeviceData
   })
-  $scope.nameRegex = /^[0-9a-zA-Z-_./: ]{1,50}$/
-  $scope.nameRegexStr = '/^[0-9a-zA-Z-_./: ]{1,50}$/'
+  $scope.nameRegex = /^[一-龥0-9a-zA-Z-_./: ]{1,50}$/
+  $scope.nameRegexStr = '/^[\u4e00-\u9fa50-9a-zA-Z-_./: ]{1,50}$/'
   $scope.classOptions = CommonService.classOptions
   $scope.getClassName = CommonService.getClassName
   $scope.sortBy = CommonService.sortBy

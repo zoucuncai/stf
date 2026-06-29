@@ -99,7 +99,7 @@ module.exports = function CommonServiceFactory(
   service.merge = function(oldObject, newObject) {
     var undefinedValue
 
-    return _.merge(oldObject, newObject, function(a, b) {
+    return _.mergeWith(oldObject, newObject, function(a, b) {
       return _.isArray(b) ? b : undefinedValue
     })
   }
