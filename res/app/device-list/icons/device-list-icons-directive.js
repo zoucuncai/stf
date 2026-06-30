@@ -173,6 +173,14 @@ module.exports = function DeviceListIconsDirective(
               e.preventDefault()
             }
           }
+
+          // 处理自动化状态设备的 Stop Automation 按钮
+          if (device.state === 'automation') {
+            if (e.target.classList.contains('btn') && e.target.classList.contains('state-automation')) {
+              kickDevice(device, true)
+              e.preventDefault()
+            }
+          }
         }
       })
 

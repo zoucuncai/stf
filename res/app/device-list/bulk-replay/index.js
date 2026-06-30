@@ -247,7 +247,7 @@ module.exports = angular.module('device-list.bulk-replay', [
       }
       // Occupy selected devices during replay.
       $q.all(targetDevices.map(function(device) {
-        return GroupService.invite(device)
+        return GroupService.invite(device, 'automation')
       }))
         .then(function(joinedDevices) {
           $scope.replayJoinedDevices = joinedDevices || []

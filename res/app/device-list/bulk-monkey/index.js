@@ -141,6 +141,7 @@ module.exports = angular.module('device-list.bulk-monkey', [
             })
           }, null, {
             releaseReason: 'bulk_task_release'
+          , usage: 'automation'
           , shouldAbort: function() {
               return $scope.monkeyAbort
             }

@@ -4,6 +4,12 @@
     span 自动化测试记录
   .widget-content.padded
     .form-inline.m-b-sm.pull-right
+      label.checkbox-inline(style='margin-right: 16px')
+        input(type='checkbox' ng-model='onlyMine' ng-change='toggleOnlyMine()')
+        span 只看我的
+      label.checkbox-inline(style='margin-right: 16px')
+        input(type='checkbox' ng-model='recent7Days' ng-change='toggleRecent7Days()')
+        span 最近7天
       input.form-control.input-sm(
         type='search'
         placeholder='搜索：运行ID、包名、录制名、执行人…'

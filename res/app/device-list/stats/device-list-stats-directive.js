@@ -41,7 +41,9 @@ module.exports = function DeviceListStatsDirective(
 
       function updateStats(device) {
         return (mapping[device.serial] = {
-          usable: device.usable ? 1 : 0
+          // 可用：真正无主
+          usable: !device.owner ? 1 : 0
+          // 繁忙：有主即繁忙（不管是谁在用）
         , busy: device.owner ? 1 : 0
         , using: device.using ? 1 : 0
         })

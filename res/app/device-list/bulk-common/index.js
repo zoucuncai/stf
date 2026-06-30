@@ -71,7 +71,7 @@ module.exports = angular.module('device-list.bulk-common', [])
             , progress: progress
             })
           }
-          return GroupService.invite(device)
+          return GroupService.invite(device, opts.usage || null)
             .then(function(joined) {
               var control = ControlService.create(joined, joined.channel)
               return $q.when(handler(control, joined))

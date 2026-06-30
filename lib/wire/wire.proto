@@ -86,6 +86,7 @@ enum MessageType {
   BluetoothSetEnabledMessage = 94;
   BluetoothGetStatusMessage  = 95;
   BluetoothCleanBondedMessage = 96;
+  PerformanceEvent           = 98;
   GroupUserChangeMessage     = 1200;
   DeviceGroupChangeMessage   = 1201;
   DeviceOriginGroupMessage   = 1202;
@@ -787,4 +788,12 @@ message PhoneStateEvent {
 message RotationEvent {
   required string serial = 1;
   required int32 rotation = 2;
+}
+
+message PerformanceEvent {
+  required string serial = 1;
+  required uint32 cpuPercent = 2;
+  required uint32 memPercent = 3;
+  required uint32 memTotal = 4;
+  required uint32 memUsed = 5;
 }

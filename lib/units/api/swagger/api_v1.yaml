@@ -1147,6 +1147,28 @@ paths:
       operationId: listReplayRuns
       tags:
         - user
+      parameters:
+        - name: page
+          in: query
+          type: integer
+          default: 1
+        - name: pageSize
+          in: query
+          type: integer
+          default: 20
+        - name: createdBy
+          in: query
+          type: string
+        - name: startDate
+          in: query
+          required: false
+          type: string
+          description: ISO 8601 start date (inclusive)
+        - name: endDate
+          in: query
+          required: false
+          type: string
+          description: ISO 8601 end date (inclusive)
       responses:
         "200":
           description: Replay runs
@@ -1320,6 +1342,16 @@ paths:
           in: query
           required: false
           type: string
+        - name: startDate
+          in: query
+          required: false
+          type: string
+          description: ISO 8601 start date (inclusive)
+        - name: endDate
+          in: query
+          required: false
+          type: string
+          description: ISO 8601 end date (inclusive)
       responses:
         "200":
           description: Monkey runs
@@ -1503,6 +1535,16 @@ paths:
           in: query
           required: false
           type: string
+        - name: startDate
+          in: query
+          required: false
+          type: string
+          description: ISO 8601 start date (inclusive)
+        - name: endDate
+          in: query
+          required: false
+          type: string
+          description: ISO 8601 end date (inclusive)
       responses:
         "200":
           description: Explorer runs

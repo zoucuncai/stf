@@ -16,6 +16,9 @@
         a(ng-href='/#!/devices/automation', ng-if='!$root.basicMode')
           span.fa.fa-flask
           span 自动化测试记录
+        a(ng-href='/#!/dashboard', ng-if='!$root.basicMode')
+          span.fa.fa-tachometer
+          span 设备看板
         a(ng-href='/#!/groups')
           span.fa.fa-object-group
           span(ng-if='!$root.basicMode', translate) Groups

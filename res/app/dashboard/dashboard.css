@@ -1,0 +1,296 @@
+/* ─── 整体布局 ──────────────────────────────── */
+.stf-dashboard {
+  padding: 16px 20px;
+  height: 100%;
+  overflow-y: auto;
+  background: #f5f6fa;
+}
+
+/* ─── 标题区 ────────────────────────────────── */
+.dashboard-header {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-refresh-tip {
+  font-size: 12px;
+  font-weight: normal;
+  color: #aaa;
+}
+
+/* ─── 顶部统计卡片 ──────────────────────────── */
+.dashboard-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  flex: 1;
+  min-width: 90px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #fff;
+  border: 2px solid #e8e8e8;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  user-select: none;
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.summary-number {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #333;
+}
+
+.summary-label {
+  font-size: 11px;
+  color: #888;
+  margin-top: 5px;
+}
+
+/* 各状态统计卡片激活高亮 */
+.summary-total.active           { border-color: #555; background: #f8f8f8; }
+.summary-available .summary-number  { color: #27ae60; }
+.summary-available.active       { border-color: #27ae60; background: #f0fff4; }
+.summary-using .summary-number      { color: #2980b9; }
+.summary-using.active           { border-color: #2980b9; background: #f0f6ff; }
+.summary-busy .summary-number       { color: #e67e22; }
+.summary-busy.active            { border-color: #e67e22; background: #fffbf0; }
+.summary-automation .summary-number { color: #16a085; }
+.summary-automation.active      { border-color: #16a085; background: #f0fffe; }
+.summary-offline .summary-number    { color: #95a5a6; }
+.summary-offline.active         { border-color: #95a5a6; background: #f5f5f5; }
+
+/* ─── 无设备提示 ────────────────────────────── */
+.dashboard-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: #bbb;
+}
+
+.dashboard-empty p {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+/* ─── 设备卡片网格 ──────────────────────────── */
+.dashboard-devices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+/* ─── 单张设备卡片 ──────────────────────────── */
+.device-card {
+  width: calc(25% - 11px);
+  min-width: 210px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  border-left: 4px solid #ccc;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.device-card:hover {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.13);
+  transform: translateY(-2px);
+}
+
+/* 左边框颜色按状态 */
+.device-card--available   { border-left-color: #27ae60; }
+.device-card--using       { border-left-color: #2980b9; }
+.device-card--busy        { border-left-color: #e67e22; }
+.device-card--automation  { border-left-color: #16a085; }
+.device-card--offline     { border-left-color: #bdc3c7; opacity: 0.75; }
+.device-card--preparing   { border-left-color: #7f8c8d; }
+.device-card--unauthorized { border-left-color: #e74c3c; }
+
+/* ─── 卡片头部 ──────────────────────────────── */
+.device-card-header {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.device-thumb {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.device-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.device-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-model {
+  font-size: 11px;
+  color: #95a5a6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 状态徽标 */
+.device-state-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: #ccc;
+}
+
+.device-card--available  .device-state-label { background: #27ae60; }
+.device-card--using      .device-state-label { background: #2980b9; }
+.device-card--busy       .device-state-label { background: #e67e22; }
+.device-card--automation .device-state-label { background: #16a085; }
+.device-card--offline    .device-state-label { background: #95a5a6; }
+.device-card--preparing  .device-state-label { background: #7f8c8d; }
+.device-card--unauthorized .device-state-label { background: #e74c3c; }
+
+/* ─── 卡片主体指标行 ────────────────────────── */
+.device-card-body {
+  padding: 10px 12px 6px;
+}
+
+.metric-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+  font-size: 12px;
+  min-height: 18px;
+}
+
+.metric-label {
+  color: #95a5a6;
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.metric-label i {
+  width: 12px;
+  text-align: center;
+}
+
+.metric-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 电量进度条 */
+.battery-bar {
+  flex: 1;
+  height: 13px;
+  margin: 0;
+  border-radius: 6px;
+  background: #ecf0f1;
+  overflow: hidden;
+}
+
+.battery-bar .progress-bar {
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 13px;
+  min-width: 28px;
+  transition: width 0.5s ease;
+}
+
+.charging-icon {
+  color: #f39c12;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.mem-label {
+  font-size: 10px;
+  color: #95a5a6;
+  white-space: nowrap;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* 温度颜色 */
+.dashboard-normal  { color: #27ae60; }
+.dashboard-warning { color: #e67e22; }
+.dashboard-danger  { color: #e74c3c; font-weight: 600; }
+
+/* ─── 卡片底部 ──────────────────────────────── */
+.device-card-footer {
+  padding: 7px 12px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.device-card-footer .btn {
+  font-size: 11px;
+  padding: 2px 10px;
+}
+
+.device-card-footer .small {
+  font-size: 11px;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── 响应式适配 ────────────────────────────── */
+@media (max-width: 1400px) {
+  .device-card { width: calc(33.33% - 10px); }
+}
+
+@media (max-width: 992px) {
+  .device-card { width: calc(50% - 8px); min-width: 180px; }
+}
+
+@media (max-width: 600px) {
+  .device-card { width: 100%; }
+  .dashboard-summary { gap: 8px; }
+  .summary-card { min-width: 70px; padding: 10px 8px; }
+  .summary-number { font-size: 22px; }
+}
